@@ -12,6 +12,7 @@
 #include <QImage>
 #include <QList>
 #include <QPoint>
+#include <QColor>
 #include "Matrix.h"
 #include "Patch.h"
 #include "Grid.h"
@@ -20,16 +21,23 @@ class Processor: public QObject {
 Q_OBJECT
 public:
 	enum MatrixType {
-		MATRIX_GRAY_VALUE = 0,
-		MATRIX_MASKED_GRAY_VALUE = 1,
-		MATRIX_AVERAGES = 2,
-		MATRIX_COUNTS = 3, // should contains ints only, defined as double for simplicity
+		MATRIX_VALUE = 0,
+		MATRIX_MASKED = 1,
+		MATRIX_AVERAGE = 2,
+		MATRIX_COUNT = 3, // should contains ints only, defined as double for simplicity
 		MATRIX_TOTAL = 4
 	};
+
+	enum ChannelType {
+		CHANNEL_GRAY = 0,
+		CHANNEL_RED = 1,
+		CHANNEL_GREEN = 2,
+		CHANNEL_BLUE = 3,
+		CHANNEL_TOTAL = 4,
+	};
+
 	enum HeaderType {
-		HEADER_ROW = 0,
-		HEADER_COL = 1,
-		HEADER_TOTAL = 2
+		HEADER_ROW = 0, HEADER_COL = 1, HEADER_TOTAL = 2
 	};
 
 public:
@@ -39,8 +47,8 @@ public:
 	const Grid & getGrid() const;
 	const PatchList & getPatches() const;
 	const RealMatrix & getMatrix(MatrixType matrixType) const;
-	int getGridRowCount() const;
-	int getGridColumnCount() const;
+	qint32 getGridRowCount() const;
+	qint32 getGridColumnCount() const;
 	double getGridAngle() const;
 	double getGridElementWidth() const;
 	double getGridElementHeight() const;
@@ -50,14 +58,15 @@ public:
 	const QStringList & getImageRowHeaders() const;
 	const QStringList & getColumnHeaders() const;
 	const QStringList & getImageColumnHeaders() const;
-	qint64 getGrayMax() const;
-	qint64 getGrayMin() const;
+	qint64 getMaxColor() const;
+	qint64 getMinColor() const;
 	qint64 getUpperBorder() const;
 	qint64 getLowerBorder() const;
 	bool isReady(MatrixType type) const;
-	QList<double> getAverageRow(int row) const;
-	QList<double> getAverageColumn(int column) const;
-//	const QList<double> & getMadRanges() const;
+	QList<double> getAverageRow(qint32 row) const;
+	QList<double> getAverageColumn(qint32 column) const;
+	ChannelType getChannel() const;
+	bool isWhiteBackground() const;
 
 public slots:
 	bool loadProject(const QString & projectFilePath);
@@ -72,7 +81,7 @@ public slots:
 	void clearLastPatch();
 	void setGridRowCount(int rows);
 	void setGridColumnCount(int cols);
-	void setGridDimension(int rows, int cols);
+	void setGridDimension(qint32 rows, qint32 cols);
 	void setGridAngle(double angle);
 	void setGridStartPoint(const QPoint & startPoint);
 	void setGridStartPointX(double x);
@@ -84,14 +93,14 @@ public slots:
 	void setGridElementHeight(double height);
 	void setGridType(Grid::GridType type);
 	void setGridOrtho(bool isOrtho);
+	void setWhiteBackground(bool white);
 	void invertImage();
-//	void omitRow(int row);
-//	void omitColumn(int column);
 	void calculateAverages();
-//	void setMadRanges(const QList<double> & madRanges);
-	void setMatrixValue(MatrixType type, int row, int column, double value);
+	void setMatrixValue(MatrixType type, qint32 row, qint32 column,
+			double value);
+	void setChannel(ChannelType channel);
 
-signals:
+	signals:
 	void imageChanged(const QImage * image);
 	void gridChanged(const Grid * grid);
 	void patchListChanged(const PatchList * patches);
@@ -105,7 +114,7 @@ signals:
 	void gridStartYChanged(double y);
 	void gridEndXChanged(double x);
 	void gridEndYChanged(double y);
-	void matrixChanged(int type, RealMatrix * matrix);
+	void matrixChanged(qint32 type, RealMatrix * matrix);
 	void message(const QString & message);
 
 private:
@@ -113,6 +122,7 @@ private:
 	void scanImage();
 	void debug(const QString &message);
 	bool isImageValid();
+	qint64 getCurrentChannelColor(const QRgb & rgb);
 
 private:
 	static const qint32 projectFileHeader;
@@ -122,8 +132,8 @@ private:
 	QImage image;
 	QList<RealMatrix> matrices;
 	QList<bool> ready;
-	qint64 grayMax, grayMin;
-	qint64 borderLower, borderUpper;
+	qint64 colorMax, colorMin;
+	qint64 borderUpper, borderLower;
 	QList<QStringList> headers;
 	Grid grid;
 	PatchList patches;
@@ -133,6 +143,8 @@ private:
 	QPoint gridStartPoint;
 	QPoint gridEndPoint;
 	bool isOrthoGrid;
+	ChannelType channel;
+	bool whiteBackground;
 };
 
 #endif /* PROCESSOR_H_ */

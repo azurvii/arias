@@ -28,13 +28,14 @@ public slots:
 	void on_actionLoadImage_triggered();
 	void on_actionLoadProject_triggered();
 	void on_actionSaveProject_triggered();
-	void on_actionExportAverageIntensities_triggered();
+	void on_actionExportCurrentMatrix_triggered();
 	void on_canvasSensitivitySlider_valueChanged(int sensitivityValue);
 	void on_canvasScaleSlider_valueChanged(int scaleValue);
 	void on_actionInvertImage_triggered();
 	void on_actionApplyMask_triggered();
 	void on_actionToggleMask_triggered();
 	void on_actionResetView_triggered();
+	void on_actionWhiteBackground_toggled(bool white);
 	void updateTypeLabels();
 	void updateProcessorStartPoint();
 	void updateProcessorEndPoint();
@@ -44,26 +45,16 @@ public slots:
 	void displayMatrix(const RealMatrix & matrix);
 	void log(const QString & message);
 	void calculateAverages();
+	void updateChannel();
 
 protected:
 	void closeEvent(QCloseEvent * event);
 	void initProject();
 	bool eventFilter(QObject * watched, QEvent * event);
 	// Transform to real coordinate
-	inline int trc(int x, double factor);
+	inline qint32 trc(qint32 x, double factor);
 	// Transform to screen coordinate
-	inline int tsc(int x, double factor);
-
-private:
-	Ui::MainWindow ui;
-	Processor processor;
-	int transientPeriod;
-	Patch::PatchType patchType;
-	QPolygon patchPolygon;
-	QString lastImagePath;
-	QString lastProjectPath;
-	QString lastExportPath;
-	bool imageMasked;
+	inline qint32 tsc(qint32 x, double factor);
 
 private:
 	static QString getFormatName(QImage::Format format);
@@ -73,6 +64,17 @@ private:
 	void makeConnections();
 	void debugMatrix(const RealMatrix * matrix);
 	void debug(const QString &message);
+
+private:
+	Ui::MainWindow ui;
+	Processor processor;
+	qint32 transientPeriod;
+	Patch::PatchType patchType;
+	QPolygon patchPolygon;
+	QString lastImagePath;
+	QString lastProjectPath;
+	QString lastExportPath;
+	bool imageMasked;
 };
 
 #endif /* MAINWINDOW_H_ */

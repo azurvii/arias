@@ -11,25 +11,26 @@
 #include <iostream>
 
 const qint32 Processor::projectFileHeader = 0x2c48a8b9;
-const qint32 Processor::projectFileVersion = 0x00000001;
+const qint32 Processor::projectFileVersion = 0x00000002;
 const QString Processor::defaultRowHeaderName = QObject::tr("R");
 const QString Processor::defaultColHeaderName = QObject::tr("C");
 
 Processor::Processor(QObject * parent) :
 	QObject(parent) {
-	grayMax = -1;
-	grayMin = -1;
+	colorMax = -1;
+	colorMin = -1;
 	borderLower = -1;
 	borderUpper = -1;
 	gridAngle = .0;
+	whiteBackground = true;
 	gridElementWidth = gridElementHeight = .0;
-	for (int i = 0; i < MATRIX_TOTAL; ++i) {
+	channel = CHANNEL_GRAY;
+	for (qint32 i = 0; i < MATRIX_TOTAL; ++i) {
 		matrices << RealMatrix();
 		ready << false;
 	}
-	for (int i = 0; i < HEADER_TOTAL; ++i) {
+	for (qint32 i = 0; i < HEADER_TOTAL; ++i) {
 		headers << QStringList();
-//		omittedHeaders << QStringList();
 	}
 }
 
@@ -50,8 +51,12 @@ bool Processor::loadProject(const QString & projectFilePath) {
 		return false;
 	}
 	if (version == projectFileVersion) {
-		int mtotal;
-		ds >> mtotal;
+		QByteArray buffer;
+		ds >> buffer;
+		buffer = qUncompress(buffer);
+		QDataStream bds(&buffer, QIODevice::ReadOnly);
+		qint32 mtotal;
+		bds >> mtotal;
 		if (mtotal != MATRIX_TOTAL) {
 			emit message(tr("This is a damaged YIMP project file."));
 			return false;
@@ -60,67 +65,40 @@ bool Processor::loadProject(const QString & projectFilePath) {
 		bool rdy;
 		matrices.clear();
 		ready.clear();
-		for (int i = 0; i < MATRIX_TOTAL; ++i) {
-			ds >> rm;
-			ds >> rdy;
+		for (qint32 i = 0; i < MATRIX_TOTAL; ++i) {
+			bds >> rm;
+			bds >> rdy;
 			matrices << rm;
 			ready << rdy;
 		}
-		int htotal;
-		ds >> htotal;
+		qint32 htotal;
+		bds >> htotal;
 		if (htotal != HEADER_TOTAL) {
 			emit message(tr("This is a damaged YIMP project file."));
 			return false;
 		}
 		QStringList h;
 		headers.clear();
-//		omittedHeaders.clear();
-		for (int i = 0; i < HEADER_TOTAL; ++i) {
-			ds >> h;
-//			ds >> oh;
+		for (qint32 i = 0; i < HEADER_TOTAL; ++i) {
+			bds >> h;
 			headers << h;
-//			omittedHeaders << oh;
 		}
-		ds >> grid;
-		ds >> patches;
-		ds >> gridAngle;
-		ds >> gridElementWidth;
-		ds >> gridElementHeight;
-		int x, y;
-		ds >> x;
-		ds >> y;
+		bds >> grid;
+		bds >> patches;
+		bds >> gridAngle;
+		bds >> gridElementWidth;
+		bds >> gridElementHeight;
+		qint32 x, y;
+		bds >> x;
+		bds >> y;
 		gridStartPoint = QPoint(x, y);
-		ds >> x;
-		ds >> y;
+		bds >> x;
+		bds >> y;
 		gridEndPoint = QPoint(x, y);
-		//		int val;
-		//		int psize;
-		//		ds >> psize;
-		//		omittedRows.clear();
-		//		for (int i = 0; i < psize; ++i) {
-		//			ds >> val;
-		//			omittedRows << val;
-		//		}
-		//		ds >> psize;
-		//		omittedColumns.clear();
-		//		for (int i = 0; i < psize; ++i) {
-		//			ds >> val;
-		//			omittedColumns << val;
-		//		}
-		//		ds >> psize;
-		//		phosphoColumns.clear();
-		//		for (int i = 0; i < psize; ++i) {
-		//			ds >> val;
-		//			phosphoColumns << val;
-		//		}
-		//		ds >> psize;
-		//		double doubleVal;
-		//		madRanges.clear();
-		//		for (int i = 0; i < psize; ++i) {
-		//			ds >> doubleVal;
-		//			madRanges << doubleVal;
-		//		}
-		ds >> image;
+		bds >> image;
+		qint32 value;
+		bds >> value;
+		channel = (ChannelType) value;
 		if (!isImageValid()) {
 			return false;
 		}
@@ -142,46 +120,29 @@ void Processor::saveProject(const QString & projectFilePath) {
 	QDataStream ds(&file);
 	ds << projectFileHeader;
 	ds << projectFileVersion;
-	ds << (int) MATRIX_TOTAL;
-	for (int i = 0; i < MATRIX_TOTAL; ++i) {
-		ds << matrices[i];
-		ds << ready[i];
+	QByteArray buffer;
+	QDataStream bds(&buffer, QIODevice::WriteOnly);
+	bds << (qint32) MATRIX_TOTAL;
+	for (qint32 i = 0; i < MATRIX_TOTAL; ++i) {
+		bds << matrices[i];
+		bds << ready[i];
 	}
-	ds << (int) HEADER_TOTAL;
-	for (int i = 0; i < HEADER_TOTAL; ++i) {
-		ds << headers[i];
-		//		ds << omittedHeaders[i];
+	bds << (qint32) HEADER_TOTAL;
+	for (qint32 i = 0; i < HEADER_TOTAL; ++i) {
+		bds << headers[i];
 	}
-	ds << grid;
-	ds << patches;
-	ds << gridAngle;
-	ds << gridElementWidth;
-	ds << gridElementHeight;
-	ds << (int) gridStartPoint.x();
-	ds << (int) gridStartPoint.y();
-	ds << (int) gridEndPoint.x();
-	ds << (int) gridEndPoint.y();
-	//	ds << (int) omittedRows.size();
-	//	for (int i = 0; i < omittedRows.size(); ++i) {
-	//		ds << omittedRows[i];
-	//	}
-	//	int psize;
-	//	psize = (int) omittedColumns.size();
-	//	ds << psize;
-	//	for (int i = 0; i < psize; ++i) {
-	//		ds << omittedColumns[i];
-	//	}
-	//	psize = (int) phosphoColumns.size();
-	//	ds << psize;
-	//	for (int i = 0; i < psize; ++i) {
-	//		ds << phosphoColumns[i];
-	//	}
-	//	psize = (int) madRanges.size();
-	//	ds << psize;
-	//	for (int i = 0; i < psize; ++i) {
-	//		ds << madRanges[i];
-	//	}
-	ds << image;
+	bds << grid;
+	bds << patches;
+	bds << gridAngle;
+	bds << gridElementWidth;
+	bds << gridElementHeight;
+	bds << (qint32) gridStartPoint.x();
+	bds << (qint32) gridStartPoint.y();
+	bds << (qint32) gridEndPoint.x();
+	bds << (qint32) gridEndPoint.y();
+	bds << image;
+	bds << (qint32) channel;
+	ds << qCompress(buffer);
 }
 
 void Processor::loadImage(const QString & imageFilePath, bool inverted) {
@@ -190,9 +151,9 @@ void Processor::loadImage(const QString & imageFilePath, bool inverted) {
 		if (!isImageValid()) {
 			return;
 		}
-		if (inverted) {
-			image.invertPixels();
-		}
+		//		if (inverted) {
+		//			image.invertPixels();
+		//		}
 		scanImage();
 		emit imageChanged(&image);
 	} else {
@@ -201,38 +162,40 @@ void Processor::loadImage(const QString & imageFilePath, bool inverted) {
 }
 
 void Processor::scanImage() {
-	int rows = image.height();
-	int cols = image.width();
-	RealMatrix & grayMatrix = matrices[MATRIX_GRAY_VALUE];
-	RealMatrix & maskedMatrix = matrices[MATRIX_MASKED_GRAY_VALUE];
-	grayMatrix.setDimension(rows, cols);
-	maskedMatrix.setDimension(rows, cols, -1.0);
-	grayMax = grayMin = qGray(image.pixel(0, 0));
-	for (int r = 0; r < rows; ++r) {
-		for (int c = 0; c < cols; ++c) {
-			int color = qGray(image.pixel(c, r));
-			grayMatrix.setValue(r, c, color);
-			maskedMatrix.setValue(r, c, color);
-			grayMax = grayMax > color ? grayMax : color;
-			grayMin = grayMin < color ? grayMin : color;
+	qint32 rows = image.height();
+	qint32 cols = image.width();
+	RealMatrix * valueMatrix = &matrices[MATRIX_VALUE];
+	RealMatrix * maskedMatrix = &matrices[MATRIX_MASKED];
+	valueMatrix->setDimension(rows, cols);
+	maskedMatrix->setDimension(rows, cols, -1.0);
+	QImage theImageToBe = image;
+	if (whiteBackground) {
+		theImageToBe.invertPixels();
+	}
+	colorMax = colorMin = getCurrentChannelColor(theImageToBe.pixel(0, 0));
+	for (qint32 r = 0; r < rows; ++r) {
+		for (qint32 c = 0; c < cols; ++c) {
+			qint32 value = getCurrentChannelColor(theImageToBe.pixel(c, r));
+			valueMatrix->setValue(r, c, value);
+			maskedMatrix->setValue(r, c, value);
+			colorMax = colorMax > value ? colorMax : value;
+			colorMin = colorMin < value ? colorMin : value;
 		}
 	}
-	ready[MATRIX_GRAY_VALUE] = true;
-	ready[MATRIX_MASKED_GRAY_VALUE] = true;
-	emit matrixChanged(MATRIX_GRAY_VALUE, &grayMatrix);
-	emit matrixChanged(MATRIX_MASKED_GRAY_VALUE, &maskedMatrix);
+	ready[MATRIX_VALUE] = true;
+	ready[MATRIX_MASKED] = true;
+	emit matrixChanged(MATRIX_VALUE, valueMatrix);
+	emit matrixChanged(MATRIX_MASKED, maskedMatrix);
 }
 
 void Processor::setRowHeaders(const QStringList & rowHeaders) {
 	setGridRowCount(rowHeaders.size());
 	headers[HEADER_ROW] = rowHeaders;
-//	syncOmittedHeaders(HEADER_ROW);
 }
 
 void Processor::setColHeaders(const QStringList & colHeaders) {
 	setGridColumnCount(colHeaders.size());
 	headers[HEADER_COL] = colHeaders;
-//	syncOmittedHeaders(HEADER_COL);
 }
 
 const RealMatrix & Processor::getMatrix(MatrixType type) const {
@@ -244,26 +207,26 @@ const QImage & Processor::getImage() const {
 }
 
 void Processor::setMask(const QBitmap &mask) {
-	int w = image.width();
-	int h = image.height();
+	qint32 w = image.width();
+	qint32 h = image.height();
 	QImage maskImage = mask.toImage();
 	if (!(w == maskImage.width() && h == maskImage.height())) {
 		return;
 	}
 	QRgb color1Rgb = QColor(Qt::color1).rgb();
-	RealMatrix & maskedMatrix = matrices[MATRIX_MASKED_GRAY_VALUE];
-	RealMatrix & grayMatrix = matrices[MATRIX_GRAY_VALUE];
-	for (int r = 0; r < h; ++r) {
-		for (int c = 0; c < w; ++c) {
+	RealMatrix & maskedMatrix = matrices[MATRIX_MASKED];
+	RealMatrix & valueMatrix = matrices[MATRIX_VALUE];
+	for (qint32 r = 0; r < h; ++r) {
+		for (qint32 c = 0; c < w; ++c) {
 			if (maskImage.pixel(c, r) != color1Rgb) {
 				maskedMatrix.setValue(r, c, -1.0);
 			} else {
-				maskedMatrix.setValue(r, c, grayMatrix.getValue(r, c));
+				maskedMatrix.setValue(r, c, valueMatrix.getValue(r, c));
 			}
 		}
 	}
-	ready[MATRIX_MASKED_GRAY_VALUE] = true;
-	emit Processor::matrixChanged(MATRIX_MASKED_GRAY_VALUE, &maskedMatrix);
+	ready[MATRIX_MASKED] = true;
+	emit Processor::matrixChanged(MATRIX_MASKED, &maskedMatrix);
 }
 
 void Processor::appendPatch(const Patch & patch) {
@@ -279,58 +242,46 @@ void Processor::clearLastPatch() {
 }
 
 void Processor::setGridRowCount(int rows) {
-	int curRows = headers[HEADER_ROW].size();
+	qint32 curRows = headers[HEADER_ROW].size();
 	if (rows == curRows) {
 		return;
 	}
 	if (curRows > rows) {
-		for (int r = 0; r < curRows - rows; ++r) {
+		for (qint32 r = 0; r < curRows - rows; ++r) {
 			headers[HEADER_ROW].pop_back();
 		}
 	} else { // curRows < rows
-		for (int r = 0; r < rows - curRows; ++r) {
+		for (qint32 r = 0; r < rows - curRows; ++r) {
 			headers[HEADER_ROW].push_back(defaultRowHeaderName);
 		}
 	}
 	calculateGrid();
-	matrices[MATRIX_AVERAGES].setRowCount(rows);
-	matrices[MATRIX_COUNTS].setRowCount(rows);
-	ready[MATRIX_AVERAGES] = false;
-	ready[MATRIX_COUNTS] = false;
-//	for (int i = omittedRows.size() - 1; i >= 0; --i) {
-//		if (omittedRows[i] >= rows) {
-//			omittedRows.removeAt(i);
-//		}
-//	}
-//	syncOmittedHeaders(HEADER_ROW);
+	matrices[MATRIX_AVERAGE].setRowCount(rows);
+	matrices[MATRIX_COUNT].setRowCount(rows);
+	ready[MATRIX_AVERAGE] = false;
+	ready[MATRIX_COUNT] = false;
 	emit gridRowCountChanged(rows);
 }
 
 void Processor::setGridColumnCount(int cols) {
-	int curCols = headers[HEADER_COL].size();
+	qint32 curCols = headers[HEADER_COL].size();
 	if (cols == curCols) {
 		return;
 	}
 	if (curCols > cols) {
-		for (int c = 0; c < curCols - cols; ++c) {
+		for (qint32 c = 0; c < curCols - cols; ++c) {
 			headers[HEADER_COL].pop_back();
 		}
 	} else { // curRows < rows
-		for (int c = 0; c < cols - curCols; ++c) {
+		for (qint32 c = 0; c < cols - curCols; ++c) {
 			headers[HEADER_COL].push_back(defaultColHeaderName);
 		}
 	}
 	calculateGrid();
-	matrices[MATRIX_AVERAGES].setColumnCount(cols);
-	matrices[MATRIX_COUNTS].setColumnCount(cols);
-	ready[MATRIX_AVERAGES] = false;
-	ready[MATRIX_COUNTS] = false;
-//	for (int i = omittedColumns.size() - 1; i >= 0; --i) {
-//		if (omittedColumns[i] >= cols) {
-//			omittedColumns.removeAt(i);
-//		}
-//	}
-//	syncOmittedHeaders(HEADER_COL);
+	matrices[MATRIX_AVERAGE].setColumnCount(cols);
+	matrices[MATRIX_COUNT].setColumnCount(cols);
+	ready[MATRIX_AVERAGE] = false;
+	ready[MATRIX_COUNT] = false;
 	emit gridColumnCountChanged(cols);
 }
 
@@ -342,11 +293,11 @@ const PatchList & Processor::getPatches() const {
 	return patches;
 }
 
-int Processor::getGridRowCount() const {
+qint32 Processor::getGridRowCount() const {
 	return headers[HEADER_ROW].size();
 }
 
-int Processor::getGridColumnCount() const {
+qint32 Processor::getGridColumnCount() const {
 	return headers[HEADER_COL].size();
 }
 
@@ -368,8 +319,8 @@ void Processor::calculateGrid() {
 	} else {
 		emit gridOverlapped(false);
 	}
-	for (int r = 0; r < headers[HEADER_ROW].size(); ++r) {
-		for (int c = 0; c < headers[HEADER_COL].size(); ++c) {
+	for (qint32 r = 0; r < headers[HEADER_ROW].size(); ++r) {
+		for (qint32 c = 0; c < headers[HEADER_COL].size(); ++c) {
 			switch (grid.getType()) {
 			case Grid::GRID_NULL:
 				break;
@@ -385,7 +336,7 @@ void Processor::calculateGrid() {
 	emit gridChanged(&grid);
 }
 
-void Processor::setGridDimension(int rows, int cols) {
+void Processor::setGridDimension(qint32 rows, qint32 cols) {
 	setGridRowCount(rows);
 	setGridColumnCount(cols);
 }
@@ -463,17 +414,11 @@ QPoint Processor::getGridEndPoint() const {
 }
 
 const QStringList & Processor::getRowHeaders() const {
-//	if (omittedRows.isEmpty()) {
-		return headers[HEADER_ROW];
-//	}
-//	return omittedHeaders[HEADER_ROW];
+	return headers[HEADER_ROW];
 }
 
 const QStringList & Processor::getColumnHeaders() const {
-//	if (omittedColumns.isEmpty()) {
-		return headers[HEADER_COL];
-//	}
-//	return omittedHeaders[HEADER_COL];
+	return headers[HEADER_COL];
 }
 
 void Processor::clearPatches() {
@@ -489,23 +434,23 @@ void Processor::invertImage() {
 
 void Processor::calculateAverages() {
 	if (image.isNull() || grid.getType() == Grid::GRID_NULL
-			|| grid.getGeometries().size() == 0
-			|| ready[MATRIX_MASKED_GRAY_VALUE] == false) {
+			|| grid.getGeometries().size() == 0 || ready[MATRIX_MASKED]
+			== false) {
 		return;
 	}
-	RealMatrix & averages = matrices[MATRIX_AVERAGES];
-	RealMatrix & counts = matrices[MATRIX_COUNTS];
-	RealMatrix & masked = matrices[MATRIX_MASKED_GRAY_VALUE];
+	RealMatrix & averages = matrices[MATRIX_AVERAGE];
+	RealMatrix & counts = matrices[MATRIX_COUNT];
+	RealMatrix & masked = matrices[MATRIX_MASKED];
 	double value;
-	for (int i = 0; i < grid.size(); ++i) {
+	for (qint32 i = 0; i < grid.size(); ++i) {
 		double sum = .0;
-		int count = 0;
+		qint32 count = 0;
 		QRect rect = grid[i];
-		for (int x = rect.left(); x < rect.right(); ++x) {
+		for (qint32 x = rect.left(); x < rect.right(); ++x) {
 			if (x < 0 || x >= image.width()) {
 				continue;
 			}
-			for (int y = rect.top(); y < rect.bottom(); ++y) {
+			for (qint32 y = rect.top(); y < rect.bottom(); ++y) {
 				if (y < 0 || y >= image.height()) {
 					continue;
 				}
@@ -516,111 +461,50 @@ void Processor::calculateAverages() {
 				}
 			}
 		}
-		int r = i / headers[HEADER_COL].size();
-		int c = i % headers[HEADER_COL].size();
+		qint32 r = i / headers[HEADER_COL].size();
+		qint32 c = i % headers[HEADER_COL].size();
 		averages.setValue(r, c, sum / count);
 		counts.setValue(r, c, count);
 	}
-	ready[MATRIX_AVERAGES] = true;
-	ready[MATRIX_COUNTS] = true;
+	ready[MATRIX_AVERAGE] = true;
+	ready[MATRIX_COUNT] = true;
 }
 
-qint64 Processor::getGrayMax() const {
-	return grayMax;
+qint64 Processor::getMaxColor() const {
+	return colorMax;
 }
 
-qint64 Processor::getGrayMin() const {
-	return grayMin;
+qint64 Processor::getMinColor() const {
+	return colorMin;
 }
-
-//void Processor::omitRow(int row) {
-//	if (row >= 0 && row < headers[HEADER_ROW].size() && !omittedRows.contains(
-//			row)) {
-//		omittedRows.append(row);
-//		qSort(omittedRows.begin(), omittedRows.end());
-//		syncOmittedHeaders(HEADER_ROW);
-//	}
-//}
-
-//void Processor::omitColumn(int column) {
-//	if (column >= 0 && column < headers[HEADER_COL].size()
-//			&& !omittedColumns.contains(column)) {
-//		omittedColumns.append(column);
-//		qSort(omittedColumns.begin(), omittedColumns.end());
-//		syncOmittedHeaders(HEADER_COL);
-//		ready[MATRIX_SCANSITE] = false;
-//	}
-//}
 
 bool Processor::isReady(MatrixType type) const {
 	return ready[type];
 }
 
-//void Processor::syncOmittedHeaders(HeaderType type) {
-//	omittedHeaders[type] = headers[type];
-//	QList<int> * omittedIndeces = 0;
-//	switch (type) {
-//	case HEADER_COL:
-//		omittedIndeces = &omittedColumns;
-//		break;
-//	case HEADER_ROW:
-//		omittedIndeces = &omittedRows;
-//		break;
-//	default:
-//		emit message(tr("ERROR: no such header"));
-//		return;
-//	}
-//	int index;
-//	for (int i = omittedIndeces->size() - 1; i >= 0; --i) {
-//		index = (*omittedIndeces)[i];
-//		omittedHeaders[type].removeAt(index);
-//	}
-//}
-
-QList<double> Processor::getAverageRow(int row) const {
+QList<double> Processor::getAverageRow(qint32 row) const {
 	QList<double> returnList;
-	if (ready[MATRIX_AVERAGES] == false || row < 0 || row
+	if (ready[MATRIX_AVERAGE] == false || row < 0 || row
 			>= headers[HEADER_ROW].size()) {
 		return returnList;
 	}
-	for (int c = 0; c < matrices[MATRIX_AVERAGES].getColumnCount(); ++c) {
-		//		if (omittedColumns.contains(c)) {
-		//			continue;
-		//		}
-		returnList << matrices[MATRIX_AVERAGES].getValue(row, c);
+	for (qint32 c = 0; c < matrices[MATRIX_AVERAGE].getColumnCount(); ++c) {
+		returnList << matrices[MATRIX_AVERAGE].getValue(row, c);
 	}
 	return returnList;
 }
 
-QList<double> Processor::getAverageColumn(int column) const {
+QList<double> Processor::getAverageColumn(qint32 column) const {
 	QList<double> returnList;
-	if (ready[MATRIX_AVERAGES] == false || column < 0 || column
+	if (ready[MATRIX_AVERAGE] == false || column < 0 || column
 			>= headers[HEADER_COL].size()) {
 		return returnList;
 	}
-	for (int r = 0; r < matrices[MATRIX_AVERAGES].getRowCount(); ++r) {
-//		if (omittedRows.contains(r)) {
-//			continue;
-//		}
-		returnList << matrices[MATRIX_AVERAGES].getValue(r, column);
+	for (qint32 r = 0; r < matrices[MATRIX_AVERAGE].getRowCount(); ++r) {
+		returnList << matrices[MATRIX_AVERAGE].getValue(r, column);
 	}
 	return returnList;
 }
-
-//void Processor::setMadRanges(const QList<double> & madRanges) {
-//	this->madRanges = madRanges;
-//}
-//
-//int Processor::getOriginalColumn(int omittedHeaderColumn) {
-//	for (int i = 0; i < omittedColumns.size(); ++i) {
-//		if (omittedHeaderColumn > omittedColumns[i]) {
-//			++omittedHeaderColumn;
-//		} else {
-//			break;
-//		}
-//	}
-//	return omittedHeaderColumn;
-//}
 
 const QStringList & Processor::getImageRowHeaders() const {
 	return headers[HEADER_ROW];
@@ -633,18 +517,6 @@ const QStringList & Processor::getImageColumnHeaders() const {
 double Processor::getGridAngle() const {
 	return gridAngle;
 }
-
-//const QList<double> & Processor::getMadRanges() const {
-//	return madRanges;
-//}
-
-//QStringList Processor::getPhosphoNames() const {
-//	QStringList returnList;
-//	for (int i = 0; i < phosphoColumns.size(); ++i) {
-//		returnList << headers[HEADER_COL][phosphoColumns[i]];
-//	}
-//	return returnList;
-//}
 
 void Processor::setGridStartPointX(double x) {
 	gridStartPoint.setX(x);
@@ -674,37 +546,7 @@ void Processor::debug(const QString &message) {
 	std::cout << "DEBUG: " << message.toStdString() << std::endl;
 }
 
-//void Processor::saveScansitePssm(const QString & filePath) {
-//	if (!isReady(MATRIX_SCANSITE)) {
-//		emit message(tr("!! Error: Scansite PSSM not calculated yet!"));
-//		return;
-//	}
-//	QFile file(filePath);
-//	if (file.open(QFile::WriteOnly) == false) {
-//		emit message(tr("!! Cannot open file %1.").arg(filePath));
-//		return;
-//	}
-//	QTextStream ds(&file);
-//	QString hheader = getColumnHeaders().join("\t");
-//	hheader += "\t*";
-//	ds << hheader << "\n";
-//	const RealMatrix & ssmatrix = matrices[MATRIX_SCANSITE];
-//	int rows = ssmatrix.getRowCount();
-//	for (int r = 0; r < rows; ++r) {
-//		QString line;
-//		int cols = ssmatrix.getColumnCount();
-//		for (int c = 0; c < cols; ++c) {
-//			line += QString::number(ssmatrix.getValue(r, c));
-//			if (c < cols - 1) {
-//				line += "\t";
-//			}
-//		}
-//		ds << line << "\n";
-//	}
-//	emit message(tr("** Exported PSSM to \"%1\"").arg(filePath));
-//}
-
-void Processor::setMatrixValue(MatrixType type, int row, int column,
+void Processor::setMatrixValue(MatrixType type, qint32 row, qint32 column,
 		double value) {
 	RealMatrix & matrix = matrices[type];
 	matrix.setValue(row, column, value);
@@ -719,7 +561,7 @@ qint64 Processor::getLowerBorder() const {
 }
 
 void Processor::saveAverageIntensities(const QString & filePath) {
-	if (!isReady(MATRIX_AVERAGES)) {
+	if (!isReady(MATRIX_AVERAGE)) {
 		emit message(tr("!! Error: Average intensities not calculated yet!"));
 		return;
 	}
@@ -732,12 +574,12 @@ void Processor::saveAverageIntensities(const QString & filePath) {
 	QString hheader = getImageColumnHeaders().join("\t");
 	hheader = "\t" + hheader;
 	ds << hheader << "\n";
-	const RealMatrix & mat = matrices[MATRIX_AVERAGES];
-	int rows = mat.getRowCount();
-	for (int r = 0; r < rows; ++r) {
+	const RealMatrix & mat = matrices[MATRIX_AVERAGE];
+	qint32 rows = mat.getRowCount();
+	for (qint32 r = 0; r < rows; ++r) {
 		QString line = getImageRowHeaders()[r] + "\t";
-		int cols = mat.getColumnCount();
-		for (int c = 0; c < cols; ++c) {
+		qint32 cols = mat.getColumnCount();
+		for (qint32 c = 0; c < cols; ++c) {
 			line += QString::number(mat.getValue(r, c));
 			if (c < cols - 1) {
 				line += "\t";
@@ -761,7 +603,7 @@ bool Processor::isImageValid() {
 	case QImage::Format_Indexed8:
 	case QImage::Format_RGB32:
 	case QImage::Format_ARGB32:
-		// they are all equal to 8-bit gray image
+		// they are all 8-bit gray image equivalents
 		borderLower = 0;
 		borderUpper = 255;
 		break;
@@ -772,4 +614,44 @@ bool Processor::isImageValid() {
 		return false;
 	}
 	return true;
+}
+
+qint64 Processor::getCurrentChannelColor(const QRgb & rgb) {
+	qint64 color;
+	switch (channel) {
+	case CHANNEL_GRAY:
+		color = qGray(rgb);
+		break;
+	case CHANNEL_RED:
+		color = qRed(rgb);
+		break;
+	case CHANNEL_GREEN:
+		color = qGreen(rgb);
+		break;
+	case CHANNEL_BLUE:
+		color = qBlue(rgb);
+		break;
+	default:
+		color = -1;
+		break;
+	}
+	return color;
+}
+
+Processor::ChannelType Processor::getChannel() const {
+	return channel;
+}
+
+void Processor::setChannel(ChannelType channel) {
+	this->channel = channel;
+	scanImage();
+}
+
+bool Processor::isWhiteBackground() const {
+	return whiteBackground;
+}
+
+void Processor::setWhiteBackground(bool white) {
+	whiteBackground = white;
+	scanImage();
 }

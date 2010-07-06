@@ -8,7 +8,7 @@
 #include "Patch.h"
 
 QDataStream & operator<<(QDataStream & stream, const Patch & patch) {
-	stream << (int) patch.getType();
+	stream << (qint32) patch.getType();
 	switch (patch.getType()) {
 	case Patch::PATCH_NULL:
 		break;
@@ -24,7 +24,7 @@ QDataStream & operator<<(QDataStream & stream, const Patch & patch) {
 }
 
 QDataStream & operator>>(QDataStream & stream, Patch & patch) {
-	int patchType;
+	qint32 patchType;
 	stream >> patchType;
 	QRect rect;
 	QPolygon polygon;
@@ -45,7 +45,7 @@ QDataStream & operator>>(QDataStream & stream, Patch & patch) {
 }
 
 QDataStream & operator<<(QDataStream & stream, const PatchList & patchList) {
-	for (int i = 0; i < patchList.size(); ++i) {
+	for (qint32 i = 0; i < patchList.size(); ++i) {
 		stream << patchList[i];
 	}
 	return stream;
@@ -53,7 +53,7 @@ QDataStream & operator<<(QDataStream & stream, const PatchList & patchList) {
 
 QDataStream & operator>>(QDataStream & stream, PatchList & patchList) {
 	patchList.clear();
-	for (int i = 0; i < patchList.size(); ++i) {
+	for (qint32 i = 0; i < patchList.size(); ++i) {
 		Patch patch;
 		stream >> patch;
 		patchList.append(patch);

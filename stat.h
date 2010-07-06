@@ -13,7 +13,7 @@
 
 #include <QList>
 
-extern int minIndexOf(const QList<double> &list);
+extern qint32 minIndexOf(const QList<double> &list);
 extern double median(QList<double> data);
 extern double mean(const QList<double> &data);
 extern double mad(const QList<double> &data);

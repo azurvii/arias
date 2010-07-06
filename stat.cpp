@@ -8,9 +8,9 @@
 #include "stat.h"
 #include <cmath>
 
-int minIndexOf(const QList<double> &list) {
-	int minIndex = 0;
-	for (int i = 0; i < list.size(); ++i) {
+qint32 minIndexOf(const QList<double> &list) {
+	qint32 minIndex = 0;
+	for (qint32 i = 0; i < list.size(); ++i) {
 		if (list[minIndex] > list[i]) {
 			minIndex = i;
 		}
@@ -20,7 +20,7 @@ int minIndexOf(const QList<double> &list) {
 
 double median(QList<double> data) {
 	qSort(data);
-	int n = data.size() / 2;
+	qint32 n = data.size() / 2;
 	if (data.size() % 2 != 0 && n != 0) {
 		return (data[n] + data[n + 1]) / 2.0;
 	} else {
@@ -30,7 +30,7 @@ double median(QList<double> data) {
 
 double mean(const QList<double> &data) {
 	double sum = 0.0;
-	for (int i = 0; i < data.size(); ++i) {
+	for (qint32 i = 0; i < data.size(); ++i) {
 		sum += data[i];
 	}
 	return sum / data.size();
@@ -39,7 +39,7 @@ double mean(const QList<double> &data) {
 double mad(const QList<double> &data) {
 	double med = median(data);
 	QList<double> absDiff;
-	for (int i = 0; i < data.size(); ++i) {
+	for (qint32 i = 0; i < data.size(); ++i) {
 		absDiff << std::abs(data[i] - med);
 	}
 	return median(absDiff);

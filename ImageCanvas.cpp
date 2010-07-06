@@ -44,12 +44,12 @@ QBitmap ImageCanvas::getMask() const {
 		case Grid::GRID_NULL:
 			break;
 		case Grid::GRID_ELLIPSE:
-			for (int i = 0; i < grid->size(); ++i) {
+			for (qint32 i = 0; i < grid->size(); ++i) {
 				painter.drawEllipse((*grid)[i]);
 			}
 			break;
 		case Grid::GRID_RECTANGLE:
-			for (int i = 0; i < grid->size(); ++i) {
+			for (qint32 i = 0; i < grid->size(); ++i) {
 				painter.drawRect((*grid)[i]);
 			}
 			break;
@@ -60,7 +60,7 @@ QBitmap ImageCanvas::getMask() const {
 		painter.save();
 		brush.setColor(QColor(Qt::color0));
 		painter.setBrush(brush);
-		for (int i = 0; i < patches->size(); ++i) {
+		for (qint32 i = 0; i < patches->size(); ++i) {
 			switch ((*patches)[i].getType()) {
 			case Patch::PATCH_ELLIPSE:
 				painter.drawEllipse((*patches)[i].getEllipse());
@@ -92,12 +92,12 @@ void ImageCanvas::paintEvent(QPaintEvent *event) {
 		case Grid::GRID_NULL:
 			break;
 		case Grid::GRID_ELLIPSE:
-			for (int i = 0; i < grid->size(); ++i) {
+			for (qint32 i = 0; i < grid->size(); ++i) {
 				painter.drawEllipse((*grid)[i]);
 			}
 			break;
 		case Grid::GRID_RECTANGLE:
-			for (int i = 0; i < grid->size(); ++i) {
+			for (qint32 i = 0; i < grid->size(); ++i) {
 				painter.drawRect((*grid)[i]);
 			}
 			break;
@@ -110,7 +110,7 @@ void ImageCanvas::paintEvent(QPaintEvent *event) {
 		QBrush brush;
 		brush.setStyle(Qt::SolidPattern);
 		brush.setColor(QColor(Qt::color1));
-		for (int i = 0; i < patches->size(); ++i) {
+		for (qint32 i = 0; i < patches->size(); ++i) {
 			switch ((*patches)[i].getType()) {
 			case Patch::PATCH_ELLIPSE:
 				painter.drawEllipse((*patches)[i].getEllipse());
