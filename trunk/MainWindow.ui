@@ -19,7 +19,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="imageTab">
        <attribute name="title">
@@ -419,6 +419,46 @@ p, li { white-space: pre-wrap; }
              </layout>
             </item>
             <item>
+             <widget class="QGroupBox" name="groupBox_3">
+              <property name="title">
+               <string>Channel</string>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_6">
+               <item>
+                <widget class="QRadioButton" name="channelGrayRadio">
+                 <property name="text">
+                  <string>Gray</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QRadioButton" name="channelRedRadio">
+                 <property name="text">
+                  <string>Red</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QRadioButton" name="channelGreenRadio">
+                 <property name="text">
+                  <string>Green</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QRadioButton" name="channelBlueRadio">
+                 <property name="text">
+                  <string>Blue</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
              <spacer name="verticalSpacer_2">
               <property name="orientation">
                <enum>Qt::Vertical</enum>
@@ -441,9 +481,73 @@ p, li { white-space: pre-wrap; }
        <attribute name="title">
         <string>Matrix</string>
        </attribute>
-       <layout class="QHBoxLayout" name="horizontalLayout_7">
+       <layout class="QHBoxLayout" name="horizontalLayout_6">
         <item>
-         <widget class="QTableWidget" name="matrixTable"/>
+         <widget class="QSplitter" name="matrixSplitter">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <widget class="QTableWidget" name="matrixTable"/>
+          <widget class="QGroupBox" name="groupBox">
+           <property name="title">
+            <string/>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_5">
+            <item>
+             <widget class="QGroupBox" name="groupBox_4">
+              <property name="title">
+               <string>Display</string>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_7">
+               <item>
+                <widget class="QRadioButton" name="matrixAverageRadio">
+                 <property name="text">
+                  <string>Average intensities</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QRadioButton" name="matrixIntegratedRadio">
+                 <property name="text">
+                  <string>Integrated intensities</string>
+                 </property>
+                 <property name="checked">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QRadioButton" name="matrixCountRadio">
+                 <property name="text">
+                  <string>Pixel counts</string>
+                 </property>
+                 <property name="checked">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>294</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -488,7 +592,7 @@ p, li { white-space: pre-wrap; }
     <addaction name="separator"/>
     <addaction name="actionLoadImage"/>
     <addaction name="separator"/>
-    <addaction name="actionExportAverageIntensities"/>
+    <addaction name="actionExportCurrentMatrix"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -496,7 +600,7 @@ p, li { white-space: pre-wrap; }
     <property name="title">
      <string>&amp;Image</string>
     </property>
-    <addaction name="actionShowInvertedImage"/>
+    <addaction name="actionWhiteBackground"/>
     <addaction name="actionInvertImage"/>
     <addaction name="separator"/>
     <addaction name="actionClearPatches"/>
@@ -575,9 +679,9 @@ p, li { white-space: pre-wrap; }
     <string>Load image</string>
    </property>
   </action>
-  <action name="actionExportAverageIntensities">
+  <action name="actionExportCurrentMatrix">
    <property name="text">
-    <string>Export average intensities</string>
+    <string>Export current matrix</string>
    </property>
   </action>
   <action name="actionQuit">
@@ -598,17 +702,6 @@ p, li { white-space: pre-wrap; }
   <action name="actionClearLastPatch">
    <property name="text">
     <string>Clear last patch</string>
-   </property>
-  </action>
-  <action name="actionShowInvertedImage">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Show inverted image</string>
    </property>
   </action>
   <action name="actionApplyMask">
@@ -666,6 +759,17 @@ p, li { white-space: pre-wrap; }
   <action name="actionClearConsole">
    <property name="text">
     <string>Clear console</string>
+   </property>
+  </action>
+  <action name="actionWhiteBackground">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>White background</string>
    </property>
   </action>
  </widget>

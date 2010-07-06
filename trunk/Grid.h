@@ -30,14 +30,14 @@ public:
 public:
 	GridType getType() const;
 	QList<QRect> getGeometries() const;
-	int size() const;
+	qint32 size() const;
 	void clear();
-	const QRect & operator[](int i) const;
-	QRect & operator[](int i);
+	const QRect & operator[](qint32 i) const;
+	QRect & operator[](qint32 i);
 	void setType(GridType type);
 	void setGeometries(const QList<QRect> & grid);
 	void appendGeometry(const QRect & geometry);
-	void remove(int i);
+	void remove(qint32 i);
 
 private:
 	GridType type;

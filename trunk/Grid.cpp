@@ -8,14 +8,14 @@
 #include "Grid.h"
 
 QDataStream & operator<<(QDataStream & stream, const Grid & grid) {
-	stream << (int) grid.getType();
-	stream << (int) grid.getGeometries().size();
+	stream << (qint32) grid.getType();
+	stream << (qint32) grid.getGeometries().size();
 	switch (grid.getType()) {
 	case Grid::GRID_NULL:
 		break;
 	case Grid::GRID_ELLIPSE:
 	case Grid::GRID_RECTANGLE:
-		for (int i = 0; i < grid.getGeometries().size(); ++i) {
+		for (qint32 i = 0; i < grid.getGeometries().size(); ++i) {
 			stream << grid.getGeometries()[i];
 		}
 		break;
@@ -24,7 +24,7 @@ QDataStream & operator<<(QDataStream & stream, const Grid & grid) {
 }
 
 QDataStream & operator>>(QDataStream & stream, Grid & grid) {
-	int gridType, gsize;
+	qint32 gridType, gsize;
 	stream >> gridType;
 	stream >> gsize;
 	grid.setType((Grid::GridType) gridType);
@@ -34,7 +34,7 @@ QDataStream & operator>>(QDataStream & stream, Grid & grid) {
 		break;
 	case Grid::GRID_ELLIPSE:
 	case Grid::GRID_RECTANGLE:
-		for (int i = 0; i < gsize; ++i) {
+		for (qint32 i = 0; i < gsize; ++i) {
 			QRect geometry;
 			stream >> geometry;
 			grid.appendGeometry(geometry);
@@ -75,18 +75,18 @@ QList<QRect> Grid::getGeometries() const {
 	return grid;
 }
 
-int Grid::size() const {
+qint32 Grid::size() const {
 	return grid.size();
 }
 
-const QRect & Grid::operator[](int i) const {
+const QRect & Grid::operator[](qint32 i) const {
 	return grid[i];
 }
 
-QRect & Grid::operator[](int i) {
+QRect & Grid::operator[](qint32 i) {
 	return grid[i];
 }
 
-void Grid::remove(int i) {
+void Grid::remove(qint32 i) {
 	grid.removeAt(i);
 }

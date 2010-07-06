@@ -110,7 +110,7 @@ void InspectorCanvas::paintGL() {
 	//  glColor3f(.5f, .5f, .0f);
 	glVertex3f(axisLimit, .0f, .0f);
 	glColor3f(.2f, .2f, .2f);
-	for (int i = tickInterval; i < guideLimit; i += tickInterval) {
+	for (qint32 i = tickInterval; i < guideLimit; i += tickInterval) {
 		glVertex3f(-guideLimit, i, .0f);
 		glVertex3f(guideLimit, i, .0f);
 		glVertex3f(-guideLimit, -i, .0f);
@@ -121,7 +121,7 @@ void InspectorCanvas::paintGL() {
 	glVertex3f(.0f, -axisLimit, .0f);
 	glVertex3f(.0f, axisLimit, .0f);
 	glColor3f(.2f, .2f, .2f);
-	for (int i = tickInterval; i < guideLimit; i += tickInterval) {
+	for (qint32 i = tickInterval; i < guideLimit; i += tickInterval) {
 		glVertex3f(i, -guideLimit, .0f);
 		glVertex3f(i, guideLimit, .0f);
 		glVertex3f(-i, -guideLimit, .0f);
@@ -138,7 +138,7 @@ void InspectorCanvas::paintGL() {
 	swapBuffers();
 }
 
-void InspectorCanvas::resizeGL(int width, int height) {
+void InspectorCanvas::resizeGL(qint32 width, qint32 height) {
 	glViewport(0, 0, width, height);
 
 	glMatrixMode( GL_PROJECTION); // Select The Projection Matrix
@@ -177,8 +177,8 @@ void InspectorCanvas::resetView() {
 }
 
 void InspectorCanvas::mouseMoveEvent(QMouseEvent *event) {
-	int dx = event->x() - lastPos.x();
-	int dy = event->y() - lastPos.y();
+	qint32 dx = event->x() - lastPos.x();
+	qint32 dy = event->y() - lastPos.y();
 
 	if (event->buttons() & Qt::LeftButton) {
 		double localSense = sensitivity * .01;
@@ -220,21 +220,21 @@ void InspectorCanvas::wheelEvent(QWheelEvent * event) {
 
 void InspectorCanvas::renderImage() {
 
-	//    int w = image->width();
-	//    int h = image->height();
+	//    qint32 w = image->width();
+	//    qint32 h = image->height();
 	//    QImage maskImage = mask.toImage();
 	//    QRgb color1Rgb = QColor(Qt::color1).rgb();
 	//    glDisable( GL_LIGHTING);
 	//    //    glPointSize(1.0f);
 	//    glBegin( GL_POINTS);
-	//    for (int i = 0; i < w; ++i) {
-	//        for (int j = 0; j < h; ++j) {
+	//    for (qint32 i = 0; i < w; ++i) {
+	//        for (qint32 j = 0; j < h; ++j) {
 	//            if (isMasked) {
 	//                if (maskImage.pixel(i, j) != color1Rgb) {
 	//                    continue;
 	//                }
 	//            }
-	//            int gray = qGray(image->pixel(i, j));
+	//            qint32 gray = qGray(image->pixel(i, j));
 	//            if (gray == 0 || gray == maxColor) {
 	//                glColor3f(.7f, .0f, .0f);
 	//            } else {
@@ -248,12 +248,12 @@ void InspectorCanvas::renderImage() {
 	//    glEnd();
 
 	if (imageShown) {
-		int colorRange = colorMax - colorMin;
+		qint32 colorRange = colorMax - colorMin;
 		glBegin( GL_POINTS);
-		int rows = renderingMatrix->getRowCount();
-		int cols = renderingMatrix->getColumnCount();
-		for (int r = 0; r < rows; ++r) {
-			for (int c = 0; c < cols; ++c) {
+		qint32 rows = renderingMatrix->getRowCount();
+		qint32 cols = renderingMatrix->getColumnCount();
+		for (qint32 r = 0; r < rows; ++r) {
+			for (qint32 c = 0; c < cols; ++c) {
 				double value = renderingMatrix->getValue(r, c);
 				if (value >= 0) {
 					if (borderLower == -1 || borderUpper == -1 || colorMax
@@ -291,18 +291,18 @@ void InspectorCanvas::setMatrix(const RealMatrix * matrix) {
 	update();
 }
 
-void InspectorCanvas::setMaxColor(int color) {
+void InspectorCanvas::setMaxColor(qint32 color) {
 	colorMax = color;
 }
 
-void InspectorCanvas::setMinColor(int color) {
+void InspectorCanvas::setMinColor(qint32 color) {
 	colorMin = color;
 }
 
-void InspectorCanvas::setUpperBorder(int color) {
+void InspectorCanvas::setUpperBorder(qint32 color) {
 	borderUpper = color;
 }
 
-void InspectorCanvas::setLowerBorder(int color) {
+void InspectorCanvas::setLowerBorder(qint32 color) {
 	borderLower = color;
 }

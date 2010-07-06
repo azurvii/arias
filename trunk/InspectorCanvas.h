@@ -31,15 +31,15 @@ public slots:
 	void setLookDownZ(bool lookZ);
 	void setOrthoView(bool ortho);
 	void setMatrix(const RealMatrix * matrix);
-	void setMaxColor(int color);
-	void setMinColor(int color);
-	void setUpperBorder(int color);
-	void setLowerBorder(int color);
+	void setMaxColor(qint32 color);
+	void setMinColor(qint32 color);
+	void setUpperBorder(qint32 color);
+	void setLowerBorder(qint32 color);
 
 protected:
 	void initializeGL();
 	void paintGL();
-	void resizeGL(int width, int height);
+	void resizeGL(qint32 width, qint32 height);
 	void mousePressEvent(QMouseEvent *event);
 	void mouseMoveEvent(QMouseEvent *event);
 	void wheelEvent(QWheelEvent * event);
@@ -68,10 +68,10 @@ private:
 	GLfloat axisXColor[3];
 	GLfloat axisYColor[3];
 	GLfloat axisZColor[3];
-	int colorMax;
-	int colorMin;
-	int borderUpper;
-	int borderLower;
+	qint32 colorMax;
+	qint32 colorMin;
+	qint32 borderUpper;
+	qint32 borderLower;
 
 private:
 	void renderImage();

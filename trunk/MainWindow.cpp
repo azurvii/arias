@@ -25,7 +25,8 @@ MainWindow::MainWindow(QWidget * parent) :
 	ui.overlapLabel->setVisible(false);
 	updateProcessor();
 	updatePatchType();
-	ui.imageCanvas->setImageInverted(ui.actionShowInvertedImage->isChecked());
+	ui.imageCanvas->setImageInverted(false);
+	processor.setWhiteBackground(ui.actionWhiteBackground->isChecked());
 	ui.matrixTable->setItemDelegate(new DoubleDelegate(this));
 	// restore settings
 	loadSettings();
@@ -96,8 +97,8 @@ bool MainWindow::eventFilter(QObject * watched, QEvent * event) {
 		if (event->type() == QEvent::MouseButtonPress) {
 			QMouseEvent *mouseEvent = static_cast<QMouseEvent *> (event);
 			// get the real coordinates on the image
-			int x = trc(mouseEvent->x(), ui.imageScaleSpin->value());
-			int y = trc(mouseEvent->y(), ui.imageScaleSpin->value());
+			qint32 x = trc(mouseEvent->x(), ui.imageScaleSpin->value());
+			qint32 y = trc(mouseEvent->y(), ui.imageScaleSpin->value());
 			const QImage & im = processor.getImage();
 			if (ui.patchGroup->isChecked()) {
 				switch (patchType) {
@@ -123,8 +124,8 @@ bool MainWindow::eventFilter(QObject * watched, QEvent * event) {
 			}
 		} else if (event->type() == QEvent::MouseButtonDblClick) {
 			QMouseEvent *mouseEvent = static_cast<QMouseEvent *> (event);
-			int x = trc(mouseEvent->x(), ui.imageScaleSpin->value());
-			int y = trc(mouseEvent->y(), ui.imageScaleSpin->value());
+			qint32 x = trc(mouseEvent->x(), ui.imageScaleSpin->value());
+			qint32 y = trc(mouseEvent->y(), ui.imageScaleSpin->value());
 			// Because the MouseButtonPress event occurs before double click
 			// here we don't need to add the point to the polygon again
 			if (ui.patchGroup->isChecked()) {
@@ -173,11 +174,11 @@ void MainWindow::showStatus(const QString & message) {
 	log(message);
 }
 
-int MainWindow::trc(int x, double factor) {
+qint32 MainWindow::trc(qint32 x, double factor) {
 	return x / factor;
 }
 
-int MainWindow::tsc(int x, double factor) {
+qint32 MainWindow::tsc(qint32 x, double factor) {
 	return x * factor;
 }
 
@@ -241,22 +242,22 @@ void MainWindow::updateInspector() {
 	if (processor.getImage().isNull()) {
 		return;
 	}
-	ui.inspectorCanvas->setMaxColor(processor.getGrayMax());
-	ui.inspectorCanvas->setMinColor(processor.getGrayMin());
+	ui.inspectorCanvas->setMaxColor(processor.getMaxColor());
+	ui.inspectorCanvas->setMinColor(processor.getMinColor());
 	ui.inspectorCanvas->setUpperBorder(processor.getUpperBorder());
 	ui.inspectorCanvas->setLowerBorder(processor.getLowerBorder());
 	if (imageMasked) {
-		if (!processor.isReady(Processor::MATRIX_MASKED_GRAY_VALUE)) {
+		if (!processor.isReady(Processor::MATRIX_MASKED)) {
 			return;
 		}
 		ui.inspectorCanvas->setMatrix(&processor.getMatrix(
-				Processor::MATRIX_MASKED_GRAY_VALUE));
+				Processor::MATRIX_MASKED));
 	} else {
-		if (!processor.isReady(Processor::MATRIX_GRAY_VALUE)) {
+		if (!processor.isReady(Processor::MATRIX_VALUE)) {
 			return;
 		}
 		ui.inspectorCanvas->setMatrix(&processor.getMatrix(
-				Processor::MATRIX_GRAY_VALUE));
+				Processor::MATRIX_VALUE));
 	}
 }
 
@@ -304,7 +305,7 @@ QStringList MainWindow::getResidues(QPlainTextEdit * edit) const {
 	QStringList toBeProcessed = edit->toPlainText().split(QRegExp("\\s+"),
 			QString::SkipEmptyParts);
 	QStringList returnList;
-	for (int i = 0; i < toBeProcessed.size(); ++i) {
+	for (qint32 i = 0; i < toBeProcessed.size(); ++i) {
 		if (processor.getColumnHeaders().contains(toBeProcessed[i])) {
 			returnList << toBeProcessed[i];
 		}
@@ -313,10 +314,32 @@ QStringList MainWindow::getResidues(QPlainTextEdit * edit) const {
 }
 
 void MainWindow::updateMatrix() {
-	if (!processor.isReady(Processor::MATRIX_AVERAGES)) {
-		processor.calculateAverages();
+	if (ui.matrixAverageRadio->isChecked()) {
+		if (!processor.isReady(Processor::MATRIX_AVERAGE)) {
+			processor.calculateAverages();
+		}
+		displayMatrix(processor.getMatrix(Processor::MATRIX_AVERAGE));
+	} else if (ui.matrixIntegratedRadio->isChecked()) {
+		if (!(processor.isReady(Processor::MATRIX_AVERAGE)
+				&& processor.isReady(Processor::MATRIX_COUNT))) {
+			processor.calculateAverages();
+		}
+		RealMatrix a = processor.getMatrix(Processor::MATRIX_AVERAGE);
+		const RealMatrix & cnt = processor.getMatrix(Processor::MATRIX_COUNT);
+		qint32 rows = a.getRowCount();
+		qint32 cols = a.getColumnCount();
+		for (int r = 0; r < rows; ++r) {
+			for (int c = 0; c < cols; ++c) {
+				a.setValue(r, c, a.getValue(r, c) * cnt.getValue(r, c));
+			}
+		}
+		displayMatrix(a);
+	} else if (ui.matrixCountRadio->isChecked()) {
+		if (!processor.isReady(Processor::MATRIX_COUNT)) {
+			processor.calculateAverages();
+		}
+		displayMatrix(processor.getMatrix(Processor::MATRIX_COUNT));
 	}
-	displayMatrix(processor.getMatrix(Processor::MATRIX_AVERAGES));
 	ui.matrixTable->setVerticalHeaderLabels(processor.getImageRowHeaders());
 	ui.matrixTable->setHorizontalHeaderLabels(processor.getImageColumnHeaders());
 }
@@ -325,8 +348,8 @@ void MainWindow::displayMatrix(const RealMatrix & matrix) {
 	ui.matrixTable->setColumnCount(matrix.getColumnCount());
 	ui.matrixTable->setRowCount(matrix.getRowCount());
 	QTableWidgetItem * item;
-	for (int r = matrix.getRowCount() - 1; r >= 0; --r) {
-		for (int c = matrix.getColumnCount() - 1; c >= 0; --c) {
+	for (qint32 r = matrix.getRowCount() - 1; r >= 0; --r) {
+		for (qint32 c = matrix.getColumnCount() - 1; c >= 0; --c) {
 			item = new QTableWidgetItem;
 			item->setData(Qt::DisplayRole, matrix.getValue(r, c));
 			ui.matrixTable->setItem(r, c, item);
@@ -366,7 +389,7 @@ void MainWindow::on_actionLoadProject_triggered() {
 }
 
 void MainWindow::on_actionSaveProject_triggered() {
-	QString filePath = QFileDialog::getSaveFileName(this, tr("Load project"),
+	QString filePath = QFileDialog::getSaveFileName(this, tr("Save project"),
 			lastProjectPath, tr("ARIAS project files (*.arp)"));
 	if (filePath.isEmpty()) {
 		return;
@@ -393,17 +416,25 @@ void MainWindow::loadSettings() {
 		ui.inspectorTabSplitter->restoreState(settings.value(
 				"inspectorTabSplitterState").toByteArray());
 	}
+	if (settings.contains("matrixSplitterState")) {
+		ui.matrixSplitter->restoreState(
+				settings.value("matrixSplitterState").toByteArray());
+	}
 	if (settings.contains("windowGeometry")) {
 		restoreGeometry(settings.value("windowGeometry").toByteArray());
 	}
 	if (settings.contains("windowState")) {
 		restoreState(settings.value("windowState").toByteArray());
 	}
-	ui.tabWidget->setCurrentIndex(settings.value("currentTab", 0).toInt());
-	if (settings.contains("imageShownInverted")) {
-		ui.actionShowInvertedImage->setChecked(settings.value(
-				"imageShownInverted", true).toBool());
+	if (settings.contains("whiteBackground")) {
+		ui.actionWhiteBackground->setChecked(
+				settings.value("whiteBackground").toBool());
 	}
+	ui.tabWidget->setCurrentIndex(settings.value("currentTab", 0).toInt());
+	//	if (settings.contains("imageShownInverted")) {
+	//		ui.actionShowInvertedImage->setChecked(settings.value(
+	//				"imageShownInverted", true).toBool());
+	//	}
 	settings.endGroup();
 	settings.beginGroup("Variables");
 	lastImagePath
@@ -428,11 +459,13 @@ void MainWindow::saveSettings() {
 	settings.setValue("orthoGrid", ui.gridOrthoCheck->isChecked());
 	settings.setValue("inspectorTabSplitterState",
 			ui.inspectorTabSplitter->saveState());
+	settings.setValue("matrixSplitterState", ui.matrixSplitter->saveState());
 	settings.setValue("currentTab", ui.tabWidget->currentIndex());
 	settings.setValue("windowGeometry", saveGeometry());
 	settings.setValue("windowState", saveState());
-	settings.setValue("imageShownInverted",
-			ui.actionShowInvertedImage->isChecked());
+	settings.setValue("whiteBackground", ui.actionWhiteBackground->isChecked());
+	//	settings.setValue("imageShownInverted",
+	//			ui.actionShowInvertedImage->isChecked());
 	settings.endGroup();
 	settings.beginGroup("Variables");
 	settings.setValue("lastImagePath", lastImagePath);
@@ -445,8 +478,8 @@ void MainWindow::saveSettings() {
 }
 
 void MainWindow::debugMatrix(const RealMatrix * matrix) {
-	for (int r = matrix->getRowCount() - 1; r >= 0; --r) {
-		for (int c = matrix->getColumnCount() - 1; c >= 0; --c) {
+	for (qint32 r = matrix->getRowCount() - 1; r >= 0; --r) {
+		for (qint32 c = matrix->getColumnCount() - 1; c >= 0; --c) {
 			std::cout << matrix->getValue(r, c) << " ";
 		}
 		std::cout << "\n";
@@ -463,33 +496,45 @@ void MainWindow::makeConnections() {
 	connect(ui.patchPolygonRadio, SIGNAL(toggled(bool)), this, SLOT(updatePatchType()));
 	connect(ui.imageScaleSpin, SIGNAL(valueChanged(double)), ui.imageCanvas, SLOT(setScale(double)));
 	connect(ui.gridGroup, SIGNAL(toggled(bool)), ui.imageCanvas, SLOT(showGrid(bool)));
-	connect(ui.gridTypeCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(updateTypeLabels()));
+	connect(ui.gridTypeCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(
+					updateTypeLabels()));
 	connect(ui.gridOrthoCheck, SIGNAL(toggled(bool)), this, SLOT(updateTypeLabels()));
 	connect(ui.gridStartXSpin, SIGNAL(valueChanged(double)), &processor, SLOT(setGridStartPointX(double)));
 	connect(ui.gridStartYSpin, SIGNAL(valueChanged(double)), &processor, SLOT(setGridStartPointY(double)));
 	connect(ui.gridEndXSpin, SIGNAL(valueChanged(double)), &processor, SLOT(setGridEndPointX(double)));
 	connect(ui.gridEndYSpin, SIGNAL(valueChanged(double)), &processor, SLOT(setGridEndPointY(double)));
-	connect(ui.actionShowInvertedImage, SIGNAL(toggled(bool)), ui.imageCanvas, SLOT(setImageInverted(bool)));
+	//	connect(ui.actionShowInvertedImage, SIGNAL(toggled(bool)), ui.imageCanvas, SLOT(setImageInverted(bool)));
 	connect(ui.actionLookDownZ, SIGNAL(toggled(bool)), ui.inspectorCanvas, SLOT(setLookDownZ(bool)));
 	connect(ui.actionOrthoView, SIGNAL(toggled(bool)), ui.inspectorCanvas, SLOT(setOrthoView(bool)));
 	//	connect(ui.actionResetView, SIGNAL(triggered()), ui.inspectorCanvas, SLOT(
 	//			resetView()));
 	connect(ui.gridAngleSpin, SIGNAL(valueChanged(double)), &processor, SLOT(setGridAngle(double)));
-	connect(ui.gridRowSpin, SIGNAL(valueChanged(int)), &processor, SLOT(setGridRowCount(int)));
-	connect(ui.gridColumnSpin, SIGNAL(valueChanged(int)), &processor, SLOT(setGridColumnCount(int)));
+	connect(ui.gridRowSpin, SIGNAL(valueChanged(int)), &processor, SLOT(
+					setGridRowCount(int)));
+	connect(ui.gridColumnSpin, SIGNAL(valueChanged(int)), &processor, SLOT(
+					setGridColumnCount(int)));
 	connect(ui.gridWidthSpin, SIGNAL(valueChanged(double)), &processor, SLOT(setGridElementWidth(double)));
 	connect(ui.gridHeightSpin, SIGNAL(valueChanged(double)), &processor, SLOT(setGridElementHeight(double)));
 	connect(ui.actionClearPatches, SIGNAL(triggered()), &processor, SLOT(
 			clearPatches()));
 	connect(ui.actionClearLastPatch, SIGNAL(triggered()), &processor, SLOT(
 			clearLastPatch()));
+	connect(ui.channelGrayRadio, SIGNAL(toggled(bool)), this, SLOT(updateChannel()));
+	connect(ui.channelRedRadio, SIGNAL(toggled(bool)), this, SLOT(updateChannel()));
+	connect(ui.channelGreenRadio, SIGNAL(toggled(bool)), this, SLOT(updateChannel()));
+	connect(ui.channelBlueRadio, SIGNAL(toggled(bool)), this, SLOT(updateChannel()));
+	connect(ui.matrixAverageRadio, SIGNAL(toggled(bool)), this, SLOT(updateMatrix()));
+	connect(ui.matrixIntegratedRadio, SIGNAL(toggled(bool)), this, SLOT(updateMatrix()));
+	connect(ui.matrixCountRadio, SIGNAL(toggled(bool)), this, SLOT(updateMatrix()));
 	connect(&processor, SIGNAL(message(const QString &)), this, SLOT(showStatus(const QString &)));
-	connect(&processor, SIGNAL(matrixChanged(int, RealMatrix *)), this, SLOT(updateInspector()));
+	connect(&processor, SIGNAL(matrixChanged(qint32, RealMatrix *)), this, SLOT(updateInspector()));
 	connect(&processor, SIGNAL(imageChanged(const QImage *)), ui.imageCanvas, SLOT(setImage(const QImage *)));
 	connect(&processor, SIGNAL(patchListChanged(const PatchList *)), ui.imageCanvas, SLOT(setPatches(const PatchList *)));
 	connect(&processor, SIGNAL(gridChanged(const Grid *)), ui.imageCanvas, SLOT(setGrid(const Grid *)));
-	connect(&processor, SIGNAL(gridRowCountChanged(int)), ui.gridRowSpin, SLOT(setValue(int)));
-	connect(&processor, SIGNAL(gridColumnCountChanged(int)), ui.gridColumnSpin, SLOT(setValue(int)));
+	connect(&processor, SIGNAL(gridRowCountChanged(int)), ui.gridRowSpin,
+			SLOT(setValue(int)));
+	connect(&processor, SIGNAL(gridColumnCountChanged(int)),
+			ui.gridColumnSpin, SLOT(setValue(int)));
 	connect(&processor, SIGNAL(gridAngleChanged(double)), ui.gridAngleSpin, SLOT(setValue(double)));
 	connect(&processor, SIGNAL(gridElementWidthChanged(double)), ui.gridWidthSpin, SLOT(setValue(double)));
 	connect(&processor, SIGNAL(gridElementHeightChanged(double)), ui.gridHeightSpin, SLOT(setValue(double)));
@@ -502,15 +547,42 @@ void MainWindow::makeConnections() {
 			calculateAverages()));
 }
 
-void MainWindow::on_actionExportAverageIntensities_triggered() {
-	QString filePath = QFileDialog::getSaveFileName(this, tr(
-			"Export average intensities"), lastExportPath, tr(
-			"Tab-delimited text files (*.txt)"));
-	if (filePath.isEmpty()) {
-		return;
+void MainWindow::on_actionExportCurrentMatrix_triggered() {
+	qint32 rows = ui.matrixTable->rowCount();
+	qint32 cols = ui.matrixTable->columnCount();
+	if (rows > 0 && cols > 0) {
+		QString filePath = QFileDialog::getSaveFileName(this, tr(
+				"Export matrix"), lastExportPath, tr(
+				"Tab-delimited text files (*.txt)"));
+		if (filePath.isEmpty()) {
+			return;
+		}
+		lastExportPath = filePath;
+		//	processor.saveAverageIntensities(filePath);
+		QFile file(filePath);
+		if (file.open(QFile::WriteOnly) == false) {
+			showStatus(tr("!! Fail to open file %1.").arg(filePath));
+			return;
+		}
+		QTextStream ds(&file);
+		QString hheader = "\t" + processor.getImageColumnHeaders().join("\t");
+		ds << hheader << "\n";
+		const RealMatrix & mat = processor.getMatrix(Processor::MATRIX_AVERAGE);
+		for (qint32 r = 0; r < rows; ++r) {
+			QString line = processor.getImageRowHeaders()[r] + "\t";
+			qint32 cols = mat.getColumnCount();
+			for (qint32 c = 0; c < cols; ++c) {
+				line += QString::number(mat.getValue(r, c));
+				if (c < cols - 1) {
+					line += "\t";
+				}
+			}
+			ds << line << "\n";
+		}
+		showStatus(tr("** Matrix exported to \"%1\"").arg(filePath));
+	} else {
+		showStatus(tr("!! No data to export"));
 	}
-	lastExportPath = filePath;
-	processor.saveAverageIntensities(filePath);
 }
 
 void MainWindow::on_actionResetView_triggered() {
@@ -522,4 +594,27 @@ void MainWindow::on_actionResetView_triggered() {
 void MainWindow::calculateAverages() {
 	processor.calculateAverages();
 	updateMatrix();
+}
+
+void MainWindow::updateChannel() {
+	Processor::ChannelType channel;
+	if (ui.channelGrayRadio->isChecked()) {
+		channel = Processor::CHANNEL_GRAY;
+	} else if (ui.channelRedRadio->isChecked()) {
+		channel = Processor::CHANNEL_RED;
+	} else if (ui.channelGreenRadio->isChecked()) {
+		channel = Processor::CHANNEL_GREEN;
+	} else if (ui.channelBlueRadio->isChecked()) {
+		channel = Processor::CHANNEL_BLUE;
+	} else {
+		showStatus(tr("!! Error: no such channel"));
+		return;
+	}
+	processor.setChannel(channel);
+	updateInspector();
+	updateMatrix();
+}
+
+void MainWindow::on_actionWhiteBackground_toggled(bool white) {
+	processor.setWhiteBackground(white);
 }

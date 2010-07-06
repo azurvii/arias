@@ -17,50 +17,50 @@ public:
 	typedef QListIterator<ElementType> Iterator;
 
 public:
-	Matrix(int rows = 0, int columns = 0) {
+	Matrix(qint32 rows = 0, qint32 columns = 0) {
 		initMatrix(rows, columns);
 	}
 
 	virtual ~Matrix() {
 	}
 
-	ElementType & getValue(int row, int column) {
+	ElementType & getValue(qint32 row, qint32 column) {
 		return array[row * columns + column];
 	}
 
-	const ElementType & getValue(int row, int column) const {
+	const ElementType & getValue(qint32 row, qint32 column) const {
 		return array[row * columns + column];
 	}
 
-	void setValue(int row, int column, const ElementType & value) {
+	void setValue(qint32 row, qint32 column, const ElementType & value) {
 		getValue(row, column) = value;
 	}
 
 	/**
 	 * Will destroy all data
 	 */
-	void setDimension(int rows, int columns, ElementType initValue =
+	void setDimension(qint32 rows, qint32 columns, ElementType initValue =
 			ElementType()) {
 		initMatrix(rows, columns, initValue);
 	}
 
-	int getRowCount() const {
+	qint32 getRowCount() const {
 		return rows;
 	}
 
-	int getColumnCount() const {
+	qint32 getColumnCount() const {
 		return columns;
 	}
 
-	int getLength() const {
+	qint32 getLength() const {
 		return rows * columns;
 	}
 
-	void setRowCount(int rowCount) {
+	void setRowCount(qint32 rowCount) {
 		initMatrix(rowCount, columns);
 	}
 
-	void setColumnCount(int columnCount) {
+	void setColumnCount(qint32 columnCount) {
 		initMatrix(rows, columnCount);
 	}
 
@@ -76,21 +76,21 @@ public:
 	}
 
 private:
-	void initMatrix(int rows, int columns, ElementType initValue =
+	void initMatrix(qint32 rows, qint32 columns, ElementType initValue =
 			ElementType()) {
 		this->rows = rows;
 		this->columns = columns;
-		int length = rows * columns;
+		qint32 length = rows * columns;
 		array.clear();
-		for (int i = 0; i < length; ++i) {
+		for (qint32 i = 0; i < length; ++i) {
 			array << initValue;
 		}
 	}
 
 private:
 	QList<ElementType> array;
-	int rows;
-	int columns;
+	qint32 rows;
+	qint32 columns;
 };
 
 typedef Matrix<double> RealMatrix;
@@ -108,8 +108,8 @@ QDataStream & operator<<(QDataStream & stream,
 		const Matrix<ElementType> & matrix) {
 	stream << matrix.getRowCount();
 	stream << matrix.getColumnCount();
-	for (int r = 0; r < matrix.getRowCount(); ++r) {
-		for (int c = 0; c < matrix.getColumnCount(); ++c) {
+	for (qint32 r = 0; r < matrix.getRowCount(); ++r) {
+		for (qint32 c = 0; c < matrix.getColumnCount(); ++c) {
 			stream << matrix.getValue(r, c);
 		}
 	}
@@ -118,14 +118,14 @@ QDataStream & operator<<(QDataStream & stream,
 
 template<typename ElementType>
 QDataStream & operator>>(QDataStream & stream, Matrix<ElementType> & matrix) {
-	int val;
+	qint32 val;
 	stream >> val;
 	matrix.setRowCount(val);
 	stream >> val;
 	matrix.setColumnCount(val);
 	ElementType elem;
-	for (int r = 0; r < matrix.getRowCount(); ++r) {
-		for (int c = 0; c < matrix.getColumnCount(); ++c) {
+	for (qint32 r = 0; r < matrix.getRowCount(); ++r) {
+		for (qint32 c = 0; c < matrix.getColumnCount(); ++c) {
 			stream >> elem;
 			matrix.setValue(r, c, elem);
 		}
