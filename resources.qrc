@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>pic/apply-mask.png</file>
+        <file>pic/calculate-average.png</file>
+        <file>pic/load-project.png</file>
+        <file>pic/open-image.png</file>
+        <file>pic/reset-view.png</file>
+        <file>pic/save-project.png</file>
+        <file>pic/toggle-mask.png</file>
+    </qresource>
+</RCC>
