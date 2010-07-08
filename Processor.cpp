@@ -151,9 +151,9 @@ void Processor::loadImage(const QString & imageFilePath, bool inverted) {
 		if (!isImageValid()) {
 			return;
 		}
-		//		if (inverted) {
-		//			image.invertPixels();
-		//		}
+		if (inverted) {
+			image.invertPixels();
+		}
 		scanImage();
 		emit imageChanged(&image);
 	} else {
@@ -162,6 +162,9 @@ void Processor::loadImage(const QString & imageFilePath, bool inverted) {
 }
 
 void Processor::scanImage() {
+	if (image.isNull()) {
+		return;
+	}
 	qint32 rows = image.height();
 	qint32 cols = image.width();
 	RealMatrix * valueMatrix = &matrices[MATRIX_VALUE];
@@ -226,7 +229,7 @@ void Processor::setMask(const QBitmap &mask) {
 		}
 	}
 	ready[MATRIX_MASKED] = true;
-	emit Processor::matrixChanged(MATRIX_MASKED, &maskedMatrix);
+	emit matrixChanged(MATRIX_MASKED, &maskedMatrix);
 }
 
 void Processor::appendPatch(const Patch & patch) {
@@ -442,6 +445,8 @@ void Processor::calculateAverages() {
 	RealMatrix & counts = matrices[MATRIX_COUNT];
 	RealMatrix & masked = matrices[MATRIX_MASKED];
 	double value;
+	double minval;
+	minval = borderUpper;
 	for (qint32 i = 0; i < grid.size(); ++i) {
 		double sum = .0;
 		qint32 count = 0;
@@ -458,12 +463,15 @@ void Processor::calculateAverages() {
 				if (value >= 0) {
 					sum += value;
 					++count;
+					if (minval > value) {
+						minval = value;
+					}
 				}
 			}
 		}
 		qint32 r = i / headers[HEADER_COL].size();
 		qint32 c = i % headers[HEADER_COL].size();
-		averages.setValue(r, c, sum / count);
+		averages.setValue(r, c, sum / count - minval);
 		counts.setValue(r, c, count);
 	}
 	ready[MATRIX_AVERAGE] = true;

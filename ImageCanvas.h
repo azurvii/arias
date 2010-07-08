@@ -9,11 +9,11 @@
 #define IMAGECANVAS_H_
 
 #include <QLabel>
-#include <QBitmap>
 #include "Grid.h"
 #include "Patch.h"
 
 class Processor;
+class QImage;
 
 class ImageCanvas: public QLabel {
 Q_OBJECT

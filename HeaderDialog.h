@@ -9,7 +9,6 @@
 #define HEADERDIALOG_H_
 
 #include "ui_HeaderDialog.h"
-#include <QString>
 
 class HeaderDialog: public QDialog {
 Q_OBJECT
