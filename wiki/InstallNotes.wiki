@@ -3,7 +3,7 @@
 
 == Mac OS X _(Tested on Mac OS X 10.6.4)_ ==
 
-  * Download arias.app.zip.
+  * Download arias-mac.zip.
   * Unzip.
   * Run the arias.app.
 
