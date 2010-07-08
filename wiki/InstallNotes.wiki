@@ -5,7 +5,6 @@
 
   * Download arias-mac.zip.
   * Unzip.
-  * Move all folders in "arias-frameworks" folder to /Library/Frameworks. i.e. you should have /Library/Frameworks/QtCore.framework etc.
   * Run the arias.app.
 
 
