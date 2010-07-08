@@ -36,6 +36,7 @@ public slots:
 	void on_actionToggleMask_triggered();
 	void on_actionResetView_triggered();
 	void on_actionWhiteBackground_toggled(bool white);
+	void on_canvasZScaleSlider_valueChanged(int scale);
 	void updateTypeLabels();
 	void updateProcessorStartPoint();
 	void updateProcessorEndPoint();

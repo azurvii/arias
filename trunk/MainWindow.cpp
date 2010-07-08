@@ -229,7 +229,12 @@ void MainWindow::on_canvasSensitivitySlider_valueChanged(int sensitivityValue) {
 }
 
 void MainWindow::on_canvasScaleSlider_valueChanged(int scaleValue) {
-	ui.inspectorCanvas->setUnitScale(scaleValue / 100.0);
+	ui.inspectorCanvas->setUnitScale(exp(scaleValue / 100.0) / 10.0);
+}
+
+void MainWindow::on_canvasZScaleSlider_valueChanged(int scale) {
+	ui.inspectorCanvas->setZScale(exp(scale / 100.0));
+	updateInspector();
 }
 
 void MainWindow::on_actionApplyMask_triggered() {
@@ -464,8 +469,6 @@ void MainWindow::saveSettings() {
 	settings.setValue("windowGeometry", saveGeometry());
 	settings.setValue("windowState", saveState());
 	settings.setValue("whiteBackground", ui.actionWhiteBackground->isChecked());
-	//	settings.setValue("imageShownInverted",
-	//			ui.actionShowInvertedImage->isChecked());
 	settings.endGroup();
 	settings.beginGroup("Variables");
 	settings.setValue("lastImagePath", lastImagePath);
@@ -491,58 +494,90 @@ void MainWindow::debug(const QString &message) {
 }
 
 void MainWindow::makeConnections() {
-	connect(ui.patchGroup, SIGNAL(toggled(bool)), ui.imageCanvas, SLOT(showPatches(bool)));
-	connect(ui.patchNullRadio, SIGNAL(toggled(bool)), this, SLOT(updatePatchType()));
-	connect(ui.patchPolygonRadio, SIGNAL(toggled(bool)), this, SLOT(updatePatchType()));
-	connect(ui.imageScaleSpin, SIGNAL(valueChanged(double)), ui.imageCanvas, SLOT(setScale(double)));
-	connect(ui.gridGroup, SIGNAL(toggled(bool)), ui.imageCanvas, SLOT(showGrid(bool)));
+	connect(ui.patchGroup, SIGNAL(toggled(bool)), ui.imageCanvas,
+			SLOT(showPatches(bool)));
+	connect(ui.patchNullRadio, SIGNAL(toggled(bool)), this,
+			SLOT(updatePatchType()));
+	connect(ui.patchPolygonRadio, SIGNAL(toggled(bool)), this,
+			SLOT(updatePatchType()));
+	connect(ui.imageScaleSpin, SIGNAL(valueChanged(double)), ui.imageCanvas,
+			SLOT(setScale(double)));
+	connect(ui.gridGroup, SIGNAL(toggled(bool)), ui.imageCanvas,
+			SLOT(showGrid(bool)));
 	connect(ui.gridTypeCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(
 					updateTypeLabels()));
-	connect(ui.gridOrthoCheck, SIGNAL(toggled(bool)), this, SLOT(updateTypeLabels()));
-	connect(ui.gridStartXSpin, SIGNAL(valueChanged(double)), &processor, SLOT(setGridStartPointX(double)));
-	connect(ui.gridStartYSpin, SIGNAL(valueChanged(double)), &processor, SLOT(setGridStartPointY(double)));
-	connect(ui.gridEndXSpin, SIGNAL(valueChanged(double)), &processor, SLOT(setGridEndPointX(double)));
-	connect(ui.gridEndYSpin, SIGNAL(valueChanged(double)), &processor, SLOT(setGridEndPointY(double)));
-	//	connect(ui.actionShowInvertedImage, SIGNAL(toggled(bool)), ui.imageCanvas, SLOT(setImageInverted(bool)));
-	connect(ui.actionLookDownZ, SIGNAL(toggled(bool)), ui.inspectorCanvas, SLOT(setLookDownZ(bool)));
-	connect(ui.actionOrthoView, SIGNAL(toggled(bool)), ui.inspectorCanvas, SLOT(setOrthoView(bool)));
-	//	connect(ui.actionResetView, SIGNAL(triggered()), ui.inspectorCanvas, SLOT(
-	//			resetView()));
-	connect(ui.gridAngleSpin, SIGNAL(valueChanged(double)), &processor, SLOT(setGridAngle(double)));
+	connect(ui.gridOrthoCheck, SIGNAL(toggled(bool)), this,
+			SLOT(updateTypeLabels()));
+	connect(ui.gridStartXSpin, SIGNAL(valueChanged(double)), &processor,
+			SLOT(setGridStartPointX(double)));
+	connect(ui.gridStartYSpin, SIGNAL(valueChanged(double)), &processor,
+			SLOT(setGridStartPointY(double)));
+	connect(ui.gridEndXSpin, SIGNAL(valueChanged(double)), &processor,
+			SLOT(setGridEndPointX(double)));
+	connect(ui.gridEndYSpin, SIGNAL(valueChanged(double)), &processor,
+			SLOT(setGridEndPointY(double)));
+	connect(ui.actionLookDownZ, SIGNAL(toggled(bool)), ui.inspectorCanvas,
+			SLOT(setLookDownZ(bool)));
+	connect(ui.actionOrthoView, SIGNAL(toggled(bool)), ui.inspectorCanvas,
+			SLOT(setOrthoView(bool)));
+	connect(ui.gridAngleSpin, SIGNAL(valueChanged(double)), &processor,
+			SLOT(setGridAngle(double)));
 	connect(ui.gridRowSpin, SIGNAL(valueChanged(int)), &processor, SLOT(
 					setGridRowCount(int)));
 	connect(ui.gridColumnSpin, SIGNAL(valueChanged(int)), &processor, SLOT(
 					setGridColumnCount(int)));
-	connect(ui.gridWidthSpin, SIGNAL(valueChanged(double)), &processor, SLOT(setGridElementWidth(double)));
-	connect(ui.gridHeightSpin, SIGNAL(valueChanged(double)), &processor, SLOT(setGridElementHeight(double)));
+	connect(ui.gridWidthSpin, SIGNAL(valueChanged(double)), &processor,
+			SLOT(setGridElementWidth(double)));
+	connect(ui.gridHeightSpin, SIGNAL(valueChanged(double)), &processor,
+			SLOT(setGridElementHeight(double)));
 	connect(ui.actionClearPatches, SIGNAL(triggered()), &processor, SLOT(
 			clearPatches()));
 	connect(ui.actionClearLastPatch, SIGNAL(triggered()), &processor, SLOT(
 			clearLastPatch()));
-	connect(ui.channelGrayRadio, SIGNAL(toggled(bool)), this, SLOT(updateChannel()));
-	connect(ui.channelRedRadio, SIGNAL(toggled(bool)), this, SLOT(updateChannel()));
-	connect(ui.channelGreenRadio, SIGNAL(toggled(bool)), this, SLOT(updateChannel()));
-	connect(ui.channelBlueRadio, SIGNAL(toggled(bool)), this, SLOT(updateChannel()));
-	connect(ui.matrixAverageRadio, SIGNAL(toggled(bool)), this, SLOT(updateMatrix()));
-	connect(ui.matrixIntegratedRadio, SIGNAL(toggled(bool)), this, SLOT(updateMatrix()));
-	connect(ui.matrixCountRadio, SIGNAL(toggled(bool)), this, SLOT(updateMatrix()));
-	connect(&processor, SIGNAL(message(const QString &)), this, SLOT(showStatus(const QString &)));
-	connect(&processor, SIGNAL(matrixChanged(qint32, RealMatrix *)), this, SLOT(updateInspector()));
-	connect(&processor, SIGNAL(imageChanged(const QImage *)), ui.imageCanvas, SLOT(setImage(const QImage *)));
-	connect(&processor, SIGNAL(patchListChanged(const PatchList *)), ui.imageCanvas, SLOT(setPatches(const PatchList *)));
-	connect(&processor, SIGNAL(gridChanged(const Grid *)), ui.imageCanvas, SLOT(setGrid(const Grid *)));
+	connect(ui.channelGrayRadio, SIGNAL(toggled(bool)), this,
+			SLOT(updateChannel()));
+	connect(ui.channelRedRadio, SIGNAL(toggled(bool)), this,
+			SLOT(updateChannel()));
+	connect(ui.channelGreenRadio, SIGNAL(toggled(bool)), this,
+			SLOT(updateChannel()));
+	connect(ui.channelBlueRadio, SIGNAL(toggled(bool)), this,
+			SLOT(updateChannel()));
+	connect(ui.matrixAverageRadio, SIGNAL(toggled(bool)), this,
+			SLOT(updateMatrix()));
+	connect(ui.matrixIntegratedRadio, SIGNAL(toggled(bool)), this,
+			SLOT(updateMatrix()));
+	connect(ui.matrixCountRadio, SIGNAL(toggled(bool)), this,
+			SLOT(updateMatrix()));
+	connect(&processor, SIGNAL(message(const QString &)), this,
+			SLOT(showStatus(const QString &)));
+	connect(&processor, SIGNAL(matrixChanged(qint32, RealMatrix *)), this,
+			SLOT(updateInspector()));
+	connect(&processor, SIGNAL(imageChanged(const QImage *)), ui.imageCanvas,
+			SLOT(setImage(const QImage *)));
+	connect(&processor, SIGNAL(patchListChanged(const PatchList *)),
+			ui.imageCanvas, SLOT(setPatches(const PatchList *)));
+	connect(&processor, SIGNAL(gridChanged(const Grid *)), ui.imageCanvas,
+			SLOT(setGrid(const Grid *)));
 	connect(&processor, SIGNAL(gridRowCountChanged(int)), ui.gridRowSpin,
 			SLOT(setValue(int)));
-	connect(&processor, SIGNAL(gridColumnCountChanged(int)),
-			ui.gridColumnSpin, SLOT(setValue(int)));
-	connect(&processor, SIGNAL(gridAngleChanged(double)), ui.gridAngleSpin, SLOT(setValue(double)));
-	connect(&processor, SIGNAL(gridElementWidthChanged(double)), ui.gridWidthSpin, SLOT(setValue(double)));
-	connect(&processor, SIGNAL(gridElementHeightChanged(double)), ui.gridHeightSpin, SLOT(setValue(double)));
-	connect(&processor, SIGNAL(gridStartXChanged(double)), ui.gridStartXSpin, SLOT(setValue(double)));
-	connect(&processor, SIGNAL(gridStartYChanged(double)), ui.gridStartYSpin, SLOT(setValue(double)));
-	connect(&processor, SIGNAL(gridEndXChanged(double)), ui.gridEndXSpin, SLOT(setValue(double)));
-	connect(&processor, SIGNAL(gridEndYChanged(double)), ui.gridEndYSpin, SLOT(setValue(double)));
-	connect(&processor, SIGNAL(gridOverlapped(bool)), ui.overlapLabel, SLOT(setVisible(bool)));
+	connect(&processor, SIGNAL(gridColumnCountChanged(int)), ui.gridColumnSpin,
+			SLOT(setValue(int)));
+	connect(&processor, SIGNAL(gridAngleChanged(double)), ui.gridAngleSpin,
+			SLOT(setValue(double)));
+	connect(&processor, SIGNAL(gridElementWidthChanged(double)),
+			ui.gridWidthSpin, SLOT(setValue(double)));
+	connect(&processor, SIGNAL(gridElementHeightChanged(double)),
+			ui.gridHeightSpin, SLOT(setValue(double)));
+	connect(&processor, SIGNAL(gridStartXChanged(double)), ui.gridStartXSpin,
+			SLOT(setValue(double)));
+	connect(&processor, SIGNAL(gridStartYChanged(double)), ui.gridStartYSpin,
+			SLOT(setValue(double)));
+	connect(&processor, SIGNAL(gridEndXChanged(double)), ui.gridEndXSpin,
+			SLOT(setValue(double)));
+	connect(&processor, SIGNAL(gridEndYChanged(double)), ui.gridEndYSpin,
+			SLOT(setValue(double)));
+	connect(&processor, SIGNAL(gridOverlapped(bool)), ui.overlapLabel,
+			SLOT(setVisible(bool)));
 	connect(ui.actionCalculateAverages, SIGNAL(triggered()), this, SLOT(
 			calculateAverages()));
 }
@@ -611,6 +646,7 @@ void MainWindow::updateChannel() {
 		return;
 	}
 	processor.setChannel(channel);
+	processor.setMask(ui.imageCanvas->getMask());
 	updateInspector();
 	updateMatrix();
 }
@@ -618,3 +654,4 @@ void MainWindow::updateChannel() {
 void MainWindow::on_actionWhiteBackground_toggled(bool white) {
 	processor.setWhiteBackground(white);
 }
+

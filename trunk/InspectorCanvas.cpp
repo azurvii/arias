@@ -7,7 +7,7 @@
 
 #include "InspectorCanvas.h"
 #include <QtGui>
-#include <cmath>
+#include <QtOpenGL>
 
 #define DEFAULT_EYE_X -10.0
 #define DEFAULT_EYE_Y -10.0
@@ -29,6 +29,7 @@ InspectorCanvas::InspectorCanvas(QWidget *parent) :
 	focusZ = DEFAULT_CENTER_Z;
 	sensitivity = DEFAULT_SENSITIVIY;
 	imageScale = DEFAULT_UNIT_SCALE;
+	zScale = 1.0;
 	imageShown = true;
 	lookZ = false;
 	ortho = false;
@@ -64,6 +65,7 @@ void InspectorCanvas::setSensitivity(double sensitivity) {
 		update();
 	}
 }
+
 void InspectorCanvas::setUnitScale(double scale) {
 	if (imageScale != scale) {
 		imageScale = scale;
@@ -90,7 +92,7 @@ void InspectorCanvas::initializeGL() {
 	glShadeModel( GL_SMOOTH);
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 #ifdef Q_WS_MAC
-	glEnable( GL_MULTISAMPLE);
+	glEnable(GL_MULTISAMPLE);
 #endif
 }
 
@@ -219,34 +221,6 @@ void InspectorCanvas::wheelEvent(QWheelEvent * event) {
 }
 
 void InspectorCanvas::renderImage() {
-
-	//    qint32 w = image->width();
-	//    qint32 h = image->height();
-	//    QImage maskImage = mask.toImage();
-	//    QRgb color1Rgb = QColor(Qt::color1).rgb();
-	//    glDisable( GL_LIGHTING);
-	//    //    glPointSize(1.0f);
-	//    glBegin( GL_POINTS);
-	//    for (qint32 i = 0; i < w; ++i) {
-	//        for (qint32 j = 0; j < h; ++j) {
-	//            if (isMasked) {
-	//                if (maskImage.pixel(i, j) != color1Rgb) {
-	//                    continue;
-	//                }
-	//            }
-	//            qint32 gray = qGray(image->pixel(i, j));
-	//            if (gray == 0 || gray == maxColor) {
-	//                glColor3f(.7f, .0f, .0f);
-	//            } else {
-	//                glColor3f((GLfloat) gray / maxColor, .7f, (maxColor
-	//                        - (GLfloat) gray) / maxColor);
-	//            }
-	//            glVertex3f(i * imageScale, (h + 1 - j) * imageScale, gray
-	//                    * imageScale);
-	//        }
-	//    }
-	//    glEnd();
-
 	if (imageShown) {
 		qint32 colorRange = colorMax - colorMin;
 		glBegin( GL_POINTS);
@@ -262,11 +236,11 @@ void InspectorCanvas::renderImage() {
 					} else if (value == borderLower || value == borderUpper) {
 						glColor3f(.7f, .0f, .0f);
 					} else {
-						glColor3f((GLfloat)(value - colorMin) / colorRange,
-								.7f, (GLfloat)(colorMax - value) / colorRange);
+						glColor3f((GLfloat) (value - colorMin) / colorRange,
+								.7f, (GLfloat) (colorMax - value) / colorRange);
 					}
 					glVertex3f(c * imageScale, (rows - r) * imageScale, value
-							* imageScale);
+							* imageScale * zScale);
 				}
 			}
 		}
@@ -280,6 +254,10 @@ double InspectorCanvas::getSensitivity() const {
 
 double InspectorCanvas::getImageScale() const {
 	return imageScale;
+}
+
+double InspectorCanvas::getZScale() const {
+	return zScale;
 }
 
 bool InspectorCanvas::isImageShown() const {
@@ -305,4 +283,8 @@ void InspectorCanvas::setUpperBorder(qint32 color) {
 
 void InspectorCanvas::setLowerBorder(qint32 color) {
 	borderLower = color;
+}
+
+void InspectorCanvas::setZScale(double scale) {
+	zScale = scale;
 }

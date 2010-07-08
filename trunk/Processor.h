@@ -8,11 +8,9 @@
 #ifndef PROCESSOR_H_
 #define PROCESSOR_H_
 
-#include <QObject>
 #include <QImage>
+#include <QString>
 #include <QList>
-#include <QPoint>
-#include <QColor>
 #include "Matrix.h"
 #include "Patch.h"
 #include "Grid.h"
@@ -72,7 +70,7 @@ public slots:
 	bool loadProject(const QString & projectFilePath);
 	void saveProject(const QString & projectFilePath);
 	void saveAverageIntensities(const QString & filePath);
-	void loadImage(const QString & imageFilePath, bool inverted = true);
+	void loadImage(const QString & imageFilePath, bool inverted = false);
 	void setRowHeaders(const QStringList & rowHeaders);
 	void setColHeaders(const QStringList & colHeaders);
 	void setMask(const QBitmap &mask);
@@ -100,7 +98,7 @@ public slots:
 			double value);
 	void setChannel(ChannelType channel);
 
-	signals:
+signals:
 	void imageChanged(const QImage * image);
 	void gridChanged(const Grid * grid);
 	void patchListChanged(const PatchList * patches);

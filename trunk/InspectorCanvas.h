@@ -9,7 +9,6 @@
 #define INSPECTORCANVAS_H_
 
 #include <QGLWidget>
-#include <QBitmap>
 #include "Matrix.h"
 #include "Processor.h"
 
@@ -20,6 +19,7 @@ public:
 	virtual ~InspectorCanvas();
 	double getSensitivity() const;
 	double getImageScale() const;
+	double getZScale() const;
 	bool isImageShown() const;
 
 public slots:
@@ -28,6 +28,7 @@ public slots:
 	void resetView();
 	void setSensitivity(double sensitivity);
 	void setUnitScale(double scale);
+	void setZScale(double scale);
 	void setLookDownZ(bool lookZ);
 	void setOrthoView(bool ortho);
 	void setMatrix(const RealMatrix * matrix);
@@ -44,7 +45,7 @@ protected:
 	void mouseMoveEvent(QMouseEvent *event);
 	void wheelEvent(QWheelEvent * event);
 
-	signals:
+signals:
 	void sensitivityChanged(double sensitivity);
 	void unitScaleChanged(double scale);
 
@@ -58,6 +59,7 @@ private:
 	double focusZ;
 	double sensitivity;
 	double imageScale;
+	double zScale;
 	bool imageShown;
 	bool lookZ;
 	bool ortho;

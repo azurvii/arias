@@ -6,6 +6,7 @@
  */
 
 #include "HeaderDialog.h"
+#include <QtGui>
 
 HeaderDialog::HeaderDialog(QWidget * parent) :
 	QDialog(parent) {
