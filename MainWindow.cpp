@@ -58,9 +58,16 @@ void MainWindow::updateTypeLabels() {
 		processor.setGridType(Grid::GRID_NULL);
 		break;
 	}
-	ui.gridOrthoCheck->setText(orthoLabel);
-	ui.gridWidthLabel->setText(widthLabel);
-	processor.setGridOrtho(ui.gridOrthoCheck->isChecked());
+	if (ui.gridOrthoCheck->isChecked()) {
+connect	(ui.gridWidthSpin, SIGNAL(valueChanged(double)),
+			ui.gridHeightSpin, SLOT(setValue(double)));
+} else {
+	disconnect(ui.gridWidthSpin, SIGNAL(valueChanged(double)),
+			ui.gridHeightSpin, SLOT(setValue(double)));
+}
+ui.gridOrthoCheck->setText(orthoLabel);
+ui.gridWidthLabel->setText(widthLabel);
+processor.setGridOrtho(ui.gridOrthoCheck->isChecked());
 }
 
 void MainWindow::updatePatchType() {
@@ -389,6 +396,8 @@ void MainWindow::on_actionLoadProject_triggered() {
 	ui.imageCanvas->setGrid(&processor.getGrid());
 	ui.imageCanvas->setPatches(&processor.getPatches());
 	ui.actionCalculateAverages->trigger();
+	//	debug(QString::number(processor.isGridOrtho()));
+	ui.gridOrthoCheck->setChecked(processor.isGridOrtho());
 	updateInspector();
 	updateMatrix();
 }
@@ -436,10 +445,6 @@ void MainWindow::loadSettings() {
 				settings.value("whiteBackground").toBool());
 	}
 	ui.tabWidget->setCurrentIndex(settings.value("currentTab", 0).toInt());
-	//	if (settings.contains("imageShownInverted")) {
-	//		ui.actionShowInvertedImage->setChecked(settings.value(
-	//				"imageShownInverted", true).toBool());
-	//	}
 	settings.endGroup();
 	settings.beginGroup("Variables");
 	lastImagePath
@@ -480,18 +485,18 @@ void MainWindow::saveSettings() {
 	settings.sync();
 }
 
-void MainWindow::debugMatrix(const RealMatrix * matrix) {
-	for (qint32 r = matrix->getRowCount() - 1; r >= 0; --r) {
-		for (qint32 c = matrix->getColumnCount() - 1; c >= 0; --c) {
-			std::cout << matrix->getValue(r, c) << " ";
-		}
-		std::cout << "\n";
-	}
-}
-
-void MainWindow::debug(const QString &message) {
-	std::cout << "DEBUG: " << message.toStdString() << std::endl;
-}
+//void MainWindow::debugMatrix(const RealMatrix * matrix) {
+//	for (qint32 r = matrix->getRowCount() - 1; r >= 0; --r) {
+//		for (qint32 c = matrix->getColumnCount() - 1; c >= 0; --c) {
+//			std::cout << matrix->getValue(r, c) << " ";
+//		}
+//		std::cout << "\n";
+//	}
+//}
+//
+//void MainWindow::debug(const QString &message) {
+//	std::cout << "DEBUG: " << message.toStdString() << std::endl;
+//}
 
 void MainWindow::makeConnections() {
 	connect(ui.patchGroup, SIGNAL(toggled(bool)), ui.imageCanvas,
@@ -645,13 +650,14 @@ void MainWindow::updateChannel() {
 		showStatus(tr("!! Error: no such channel"));
 		return;
 	}
-	processor.setChannel(channel);
-	processor.setMask(ui.imageCanvas->getMask());
-	updateInspector();
-	updateMatrix();
+	if (channel != processor.getChannel()) {
+		processor.setChannel(channel);
+		processor.setMask(ui.imageCanvas->getMask());
+		updateInspector();
+		updateMatrix();
+	}
 }
 
 void MainWindow::on_actionWhiteBackground_toggled(bool white) {
 	processor.setWhiteBackground(white);
 }
-

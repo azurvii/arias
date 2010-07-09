@@ -63,8 +63,8 @@ private:
 	void loadSettings();
 	void saveSettings();
 	void makeConnections();
-	void debugMatrix(const RealMatrix * matrix);
-	void debug(const QString &message);
+	//	void debugMatrix(const RealMatrix * matrix);
+	//	void debug(const QString &message);
 
 private:
 	Ui::MainWindow ui;
