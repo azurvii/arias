@@ -11,7 +11,7 @@
 #include <iostream>
 
 const qint32 Processor::projectFileHeader = 0x2c48a8b9;
-const qint32 Processor::projectFileVersion = 0x00000002;
+const qint32 Processor::projectFileVersion = 0x00000003;
 const QString Processor::defaultRowHeaderName = QObject::tr("R");
 const QString Processor::defaultColHeaderName = QObject::tr("C");
 
@@ -47,7 +47,7 @@ bool Processor::loadProject(const QString & projectFilePath) {
 	qint32 header, version;
 	ds >> header >> version;
 	if (header != projectFileHeader) {
-		emit message(tr("!! This is not a YIMP project file."));
+		emit message(tr("!! This is not a ARIAS project file."));
 		return false;
 	}
 	if (version == projectFileVersion) {
@@ -58,7 +58,7 @@ bool Processor::loadProject(const QString & projectFilePath) {
 		qint32 mtotal;
 		bds >> mtotal;
 		if (mtotal != MATRIX_TOTAL) {
-			emit message(tr("This is a damaged YIMP project file."));
+			emit message(tr("This is a damaged ARIAS project file."));
 			return false;
 		}
 		RealMatrix rm;
@@ -74,7 +74,7 @@ bool Processor::loadProject(const QString & projectFilePath) {
 		qint32 htotal;
 		bds >> htotal;
 		if (htotal != HEADER_TOTAL) {
-			emit message(tr("This is a damaged YIMP project file."));
+			emit message(tr("This is a damaged ARIAS project file."));
 			return false;
 		}
 		QStringList h;
@@ -95,6 +95,8 @@ bool Processor::loadProject(const QString & projectFilePath) {
 		bds >> x;
 		bds >> y;
 		gridEndPoint = QPoint(x, y);
+		bds >> whiteBackground;
+		bds >> isOrthoGrid;
 		bds >> image;
 		qint32 value;
 		bds >> value;
@@ -105,8 +107,28 @@ bool Processor::loadProject(const QString & projectFilePath) {
 		scanImage();
 		emit imageChanged(&image);
 		return true;
-	} else {
-		emit message(tr("!! This YIMP project version is not supported."));
+	} else if (version > projectFileVersion) {
+		QString
+				msg =
+						tr(
+								"!! This ARIAS project file was created by a newer version of ARIAS. "
+									"Please check \"http://arias.googlecode.com/\" for an update.");
+		emit message(msg);
+#ifdef QT_QTGUI_MODULE_H
+		QMessageBox::information(0, tr("Information"), msg);
+#endif//QT_QTGUI_MODULE_H
+		return false;
+	} else { // version < projectFileVersion
+		QString
+				msg =
+						tr(
+								"!! This ARIAS project file was created by an older version of ARIAS, "
+									"which is currently not supported. "
+									"Please check \"http://arias.googlecode.com/\" for an older version.");
+		emit message(msg);
+#ifdef QT_QTGUI_MODULE_H
+		QMessageBox::information(0, tr("Information"), msg);
+#endif//QT_QTGUI_MODULE_H
 		return false;
 	}
 }
@@ -140,6 +162,8 @@ void Processor::saveProject(const QString & projectFilePath) {
 	bds << (qint32) gridStartPoint.y();
 	bds << (qint32) gridEndPoint.x();
 	bds << (qint32) gridEndPoint.y();
+	bds << whiteBackground;
+	bds << isOrthoGrid;
 	bds << image;
 	bds << (qint32) channel;
 	ds << qCompress(buffer);
@@ -186,6 +210,8 @@ void Processor::scanImage() {
 		}
 	}
 	ready[MATRIX_VALUE] = true;
+	ready[MATRIX_AVERAGE] = false;
+	ready[MATRIX_COUNT] = false;
 	ready[MATRIX_MASKED] = true;
 	emit matrixChanged(MATRIX_VALUE, valueMatrix);
 	emit matrixChanged(MATRIX_MASKED, maskedMatrix);
@@ -439,6 +465,7 @@ void Processor::calculateAverages() {
 	if (image.isNull() || grid.getType() == Grid::GRID_NULL
 			|| grid.getGeometries().size() == 0 || ready[MATRIX_MASKED]
 			== false) {
+		emit message(tr("!! Averages not calculated."));
 		return;
 	}
 	RealMatrix & averages = matrices[MATRIX_AVERAGE];
@@ -662,4 +689,8 @@ bool Processor::isWhiteBackground() const {
 void Processor::setWhiteBackground(bool white) {
 	whiteBackground = white;
 	scanImage();
+}
+
+bool Processor::isGridOrtho() const {
+	return isOrthoGrid;
 }

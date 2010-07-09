@@ -65,6 +65,7 @@ public:
 	QList<double> getAverageColumn(qint32 column) const;
 	ChannelType getChannel() const;
 	bool isWhiteBackground() const;
+	bool isGridOrtho() const;
 
 public slots:
 	bool loadProject(const QString & projectFilePath);
@@ -98,7 +99,7 @@ public slots:
 			double value);
 	void setChannel(ChannelType channel);
 
-signals:
+	signals:
 	void imageChanged(const QImage * image);
 	void gridChanged(const Grid * grid);
 	void patchListChanged(const PatchList * patches);
