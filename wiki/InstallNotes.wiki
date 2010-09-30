@@ -16,7 +16,7 @@
 
 == Linux _(Tested on Ubuntu 10.04 x86)_ ==
 
-  * Give various distributions, no binary is provided; you need to compile it yourself.
+  * Given that various distributions exist, no binary is provided; you need to compile it yourself for your specific distro.
   * Download arias-src.tar.gz.
   * Install g++, make, and Qt development tools (at least 4.5) on your system. For example, in Ubuntu, run the command:
     `sudo apt-get install g++ qt4-dev-tools libqt4-dev make`
